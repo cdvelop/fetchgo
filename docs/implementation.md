@@ -161,274 +161,80 @@ err := Errf("fetch failed: status %s", statusCode)
 
 ## Remaining Questions and Considerations
 
-### 1. 🔧 **TinyGo Header Handling Strategy**
-**Question**: How to efficiently handle the `[]string` headers format?
+### 1. 🔧 **TinyGo Header Handling Strategy** ✅ DECIDED
+**Decision**: Minimal helper methods (`AddHeader`, `SetHeader`) will be provided for convenience. Direct slice manipulation remains possible for advanced use cases. The internal `upsertHeader` and `getHeaders` logic is approved as proposed.
 
-**Proposed Implementation**:
+**Final Implementation**:
 ```go
-type Client struct {
-    DefaultHeaders []string // ["Content-Type", "application/json", "Authorization", "Bearer token"]
-}
+// Public helpers approved
+func (c *Client) AddHeader(key, value string) { c.upsertHeader(key, value, false) }
+func (c *Client) SetHeader(key, value string) { c.upsertHeader(key, value, true) }
 
-// Internal helper that implements the core logic for adding/replacing
-// headers. If replace==true it will replace the first occurrence of key,
-// otherwise it will append a new (key,value) pair even if the key exists.
-func (c *Client) upsertHeader(key, value string, replace bool) {
-    for i := 0; i < len(c.defaultHeaders); i += 2 {
-        if i+1 < len(c.defaultHeaders) && c.defaultHeaders[i] == key {
-            if replace {
-                c.defaultHeaders[i+1] = value
-                return
-            }
-            // add duplicate and return
-            c.defaultHeaders = append(c.defaultHeaders, key, value)
-            return
-        }
-    }
-    // not found: append
-    c.defaultHeaders = append(c.defaultHeaders, key, value)
-}
-
-// Public helper to add headers. Adds the (key,value) pair even if the key
-// already exists (may create duplicates).
-func (c *Client) AddHeader(key, value string) {
-    c.upsertHeader(key, value, false)
-}
-
-// SetHeader ensures there is at most one entry for the given key. If the
-// header already exists it is replaced; otherwise the header is appended.
-func (c *Client) SetHeader(key, value string) {
-    c.upsertHeader(key, value, true)
-}
-
-// getHeaders converts the private []string representation to a map for
-// internal use. If duplicate keys exist the last value wins (consistent
-// with SetHeader behavior and overwrite semantics).
-func (c *Client) getHeaders() map[string]string {
-    headers := make(map[string]string)
-    for i := 0; i < len(c.defaultHeaders); i += 2 {
-        if i+1 < len(c.defaultHeaders) {
-            headers[c.defaultHeaders[i]] = c.defaultHeaders[i+1]
-        }
-    }
-    return headers
-}
+// Internal logic approved
+// func (c *Client) upsertHeader(...)
+// func (c *Client) getHeaders() map[string]string
 ```
+**Consideration**: No validation will be performed on the raw `DefaultHeaders` slice. It is the developer's responsibility to ensure it contains an even number of elements.
 
-**Questions**:
-- Should we provide helper methods for header manipulation?
-- How to handle header validation (odd number of elements)?
-- Should we panic or return error on malformed headers?
+### 2. ⏱️ **Environment-Specific Timeout Handling** ✅ DECIDED
+**Decision**: **Option A** (Build-tag specific implementation) is approved. This approach is simple, avoids over-engineering, and cleanly separates the environment-specific logic.
 
-### 2. ⏱️ **Environment-Specific Timeout Handling**
-**Question**: How to implement timeout differently for WASM vs StdLib?
-
-**Options**:
-
-**A) Build-tag specific timeout implementation**
+**Final Implementation**:
 ```go
 // client_wasm.go
-func (c *Client) applyTimeout(timeoutMS int) js.Value {
-    // Use AbortController with setTimeout (milliseconds)
-    controller := js.Global().Get("AbortController").New()
-    if timeoutMS > 0 {
-        js.Global().Call("setTimeout", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-            controller.Call("abort")
-            return nil
-        }), timeoutMS)
-    }
-    return controller
-}
+// func (c *Client) applyTimeout(timeoutMS int) js.Value { ... }
 
-// client_stdlib.go  
-func (c *Client) applyTimeout(timeoutMS int) context.Context {
-    if timeoutMS > 0 {
-        ctx, _ := context.WithTimeout(context.Background(), time.Duration(timeoutMS)*time.Millisecond)
-        return ctx
-    }
-    return context.Background()
-}
+// client_stdlib.go
+// func (c *Client) applyTimeout(timeoutMS int) context.Context { ... }
 ```
 
-**B) Unified timeout interface**
-```go
-type TimeoutHandler interface {
-    ApplyTimeout(seconds int) // Environment-specific implementation
-    Cancel()                  // Cancel current timeout
-}
-```
+### 3. 📝 **Request Type Handling** ✅ DECIDED
+**Decision**: **Option A** (Per-client `RequestType`) is approved for the initial version. This keeps the API simple. The ability to override on a per-request basis can be added later if needed.
 
-**My Recommendation**: **Option A** - Direct build-tag implementation for simplicity
+**Final Implementation**: The `requestType` will be a field on the `Client` struct and will determine the `Content-Type` header and body encoding for all requests made with that client instance.
 
-### 3. 📝 **Request Type Handling**
-**Question**: How should `RequestType` field influence request processing?
+### 4. 🔌 **Encoder Interface Implementation** ✅ DECIDED
+**Decision**: **Option C** (JSON and Raw encoders) is approved. This provides a balanced set of default encoders that cover the most common scenarios (structured data and binary/pass-through data) without adding unnecessary complexity.
 
-**Proposed Behavior**:
-```go
-// Impact on Content-Type header and body encoding
-switch c.requestType {
-case requestTypeJSON:
-    // Content-Type: application/json
-    // Use JSON encoder
-case requestTypeForm:
-    // Content-Type: application/x-www-form-urlencoded  
-    // Use URL encoding
-case requestTypeMultipart:
-    // Content-Type: multipart/form-data
-    // Use multipart encoder
-case requestTypeRaw:
-    // No Content-Type set
-    // Pass body as-is
-}
-```
+**Final Implementation**:
+- `JSONEncoder`: Default for `RequestJSON`.
+- `RawEncoder`: Default for `RequestRaw`.
+- The `Encoder` interface and pluggable design are approved.
 
-**Questions**:
-- Should RequestType be per-client or per-request?
-- How to override RequestType for specific requests?
-- Should we support custom Content-Type headers?
+### 5. � File and Binary Payload Handling ✅ DECIDED
 
-### 4. 🔌 **Encoder Interface Implementation**
-**Question**: What default encoders should we provide?
+**Decision**: The proposal to consolidate file and binary handling into the main `SendRequest` function is approved. This maintains a minimal API surface.
 
-**Proposed Default Encoders**:
-```go
-// JSONEncoder using encoding/json
-type JSONEncoder struct{}
-func (e JSONEncoder) Encode(data any) ([]byte, error) { ... }
-func (e JSONEncoder) Decode(data []byte) (any, error) { ... }
+**Final Implementation**: `SendRequest` will accept `[]byte`, `string` (as a file path for StdLib), and `io.Reader` for StdLib, and `js.Value` (e.g., File/Blob objects) for WASM, as outlined in the proposal. The internal `prepareBody` helper is a good approach for implementation.
 
-// FormEncoder for URL-encoded forms  
-type FormEncoder struct{}
-func (e FormEncoder) Encode(data any) ([]byte, error) { ... }
-func (e FormEncoder) Decode(data []byte) (any, error) { ... }
+### 6. 🎯 **SendRequest Method Versatility** ✅ DECIDED
+**Decision**: The versatile signature for `SendRequest` is approved. The internal processing logic is a solid plan. To improve robustness, basic validation will be added to ensure the `method` parameter is a standard HTTP method.
 
-// RawEncoder for []byte pass-through
-type RawEncoder struct{}
-func (e RawEncoder) Encode(data any) ([]byte, error) { ... }
-func (e RawEncoder) Decode(data []byte) (any, error) { ... }
-```
+**Final Implementation**:
+- The proposed `SendRequest` signature and internal logic are approved.
+- An internal check will be added to validate the `method` string (e.g., GET, POST, etc.) and return an error for invalid methods.
+- Special handling for HEAD requests (discarding the response body) will be implemented.
+- Auto-retry logic is considered out of scope for the initial version.
 
-**Questions**:
-- Should we include all encoders or just JSON initially?
-- How to handle encoder selection based on RequestType?
-- Should encoders handle type assertions internally?
+### 7. 📦 **Dependency Management** ✅ DECIDED
+**Decision**: The integration of `github.com/cdvelop/tinystring` is approved. It will be used for all internal error creation and string conversions to ensure the library is lightweight and optimized for TinyGo.
 
-### 5. � File and Binary Payload Handling
+**Final Implementation**: The library will import `github.com/cdvelop/tinystring` and use its `Err`, `Errf`, and `Convert` functions. No wrappers are necessary.
 
-Decision: Remove a separate UploadFile API. The single `SendRequest` entrypoint will accept files and binary payloads directly. This keeps the surface area small and lets callers provide the body in the most natural form for their environment.
+### 8. 🗂️ **File Structure Refinement** ✅ DECIDED
+**Decision**: The proposed file structure is approved with a modification: timeout and file upload logic will be integrated directly into the `client_wasm.go` and `client_stdlib.go` files instead of separate `timeout_*.go` or `upload.go` files. This reduces the number of files and keeps related logic co-located.
 
-Guidelines:
-
-- Acceptable `body` values for `SendRequest`:
-    - WASM: `js.Value` (File object or other JS body) — pass through to the browser Fetch API when appropriate
-    - StdLib: `[]byte`, `string` (file path), or `io.Reader`
-
-- Internal helper idea (implementation detail):
-```go
-// prepareBody inspects `body` and returns a representation suitable for
-// the environment-specific request executor.
-// For StdLib it returns ([]byte, contentType string, io.ReadCloser, error).
-// For WASM it may return (js.Value, contentType string, error) so the
-// Fetch call can use a File/Blob directly without extra copies.
-func (c *Client) prepareBody(body any) (interface{}, string, error) {
-        // detect types and prepare body accordingly
-}
-```
-
-- Notes:
-    - For WASM, if `body` is a `js.Value` File/Blob, prefer passing it directly to `fetch` to avoid copying large files into Go memory.
-    - For StdLib, accept file paths and `io.Reader` and stream them into the request body when possible.
-    - MIME detection can be attempted (e.g., via file extension or magic bytes) but is optional; callers can always set `Content-Type` via headers.
-    - Progress reporting and advanced streaming for very large uploads are considered Phase 2 features.
-
-This change replaces the previously separate Upload API and consolidates file and binary handling into `SendRequest`, keeping the public API surface smaller and easier to migrate to.
-
-### 6. 🎯 **SendRequest Method Versatility**
-**Question**: How to make SendRequest handle any type of request efficiently?
-
-**Proposed Signature**:
-```go
-func (c *Client) SendRequest(method, url string, body any, callback func(any, error)) {
-    // Method can be: GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS
-    // URL can be relative (uses BaseURL) or absolute
-    // Body can be: nil, []byte, string, struct, map, js.Value (for WASM files)
-    // Callback receives: response data (any) and error
-}
-```
-
-**Internal Processing Logic**:
-```go
-func (c *Client) SendRequest(method, url string, body any, callback func(any, error)) {
-    go func() {
-        // 1. Build full URL (BaseURL + url if relative)
-        fullURL := c.buildURL(url)
-        
-        // 2. Determine encoding based on RequestType and body type
-        encodedBody, contentType, err := c.encodeBody(body)
-        if err != nil {
-            callback(nil, tinystring.Errf("encoding error: %s", err.Error()))
-            return
-        }
-        
-        // 3. Build headers (DefaultHeaders + Content-Type)
-        headers := c.buildHeaders(contentType)
-        
-        // 4. Execute request (environment-specific)
-        result, err := c.doRequest(method, fullURL, encodedBody, headers)
-        
-        // 5. Process response
-        callback(result, err)
-    }()
-}
-```
-
-**Questions**:
-- Should we validate HTTP methods?
-- How to handle special cases like HEAD requests (no body expected in response)?
-- Should we auto-retry on certain errors?
-
-### 7. 📦 **Dependency Management**
-**Question**: How to integrate tinystring dependency?
-
-**Required from tinystring**:
-```go
-import . "github.com/cdvelop/tinystring"
-
-// Error handling
-err := Err("simple error message")
-err := Errf("formatted error: %s", details)
-
-// String/number conversions
-statusStr := Convert(statusCode).String()
-timeout := Convert(timeoutStr).Int()
-```
-
-**Questions**:
-- Should we wrap tinystring functions for internal use?
-- How to handle tinystring availability in different environments?
-- Should we have fallback implementations if tinystring is not available?
-
-### 8. 🗂️ **File Structure Refinement**
-**Question**: Final file organization based on decisions?
-
-**Proposed Structure**:
+**Final Structure**:
 ```
 fetchgo/
-├── client.go              // Main Client struct and public API
-├── types.go              // Interfaces (Encoder) and types
-├── encoders.go           // Default encoder implementations  
-├── client_wasm.go        // WASM-specific implementation (//go:build wasm)
-├── client_stdlib.go      // StdLib implementation (//go:build !wasm)
-├── utils.go              // Shared utilities (URL building, header processing)
-├── timeout_wasm.go       // WASM timeout handling (//go:build wasm)
-├── timeout_stdlib.go     // StdLib timeout handling (//go:build !wasm)
-└── upload.go             // File upload utilities
+├── client.go          // Main Client struct and public API (SendRequest)
+├── types.go           // Public types (requestType) and interfaces (Encoder)
+├── encoders.go        // Default encoder implementations (JSON, Raw)
+├── client_wasm.go     // WASM-specific implementation (doRequest, timeout)
+├── client_stdlib.go   // StdLib implementation (doRequest, timeout, file handling)
+├── headers.go         // Shared utilities for header processing
+└── url.go             // Shared utilities for URL building
 ```
-
-**Questions**:
-- Should timeout handling be in separate files or integrated?
-- Do we need separate upload files or integrate in client files?
-- Should encoders be in the same package or separate?
 
 ## Proposed Implementation Plan
 
