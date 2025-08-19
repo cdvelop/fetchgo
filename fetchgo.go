@@ -4,7 +4,7 @@ type Fetchgo struct{}
 
 func New() *Fetchgo {
 
-    f := &Fetchgo{}
+	f := &Fetchgo{}
 
-    return f
+	return f
 }
