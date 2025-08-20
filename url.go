@@ -2,7 +2,6 @@ package fetchgo
 
 import (
 	"net/url"
-	"strings"
 
 	. "github.com/cdvelop/tinystring"
 )
@@ -12,7 +11,7 @@ import (
 // Otherwise, it is joined with the client's BaseURL.
 func (c *Client) buildURL(endpoint string) (string, error) {
 	// Check if the endpoint is already an absolute URL.
-	if strings.HasPrefix(endpoint, "http://") || strings.HasPrefix(endpoint, "https://") {
+	if HasPrefix(endpoint, "http://") || HasPrefix(endpoint, "https://") {
 		// Also validate that it's a well-formed URL.
 		if _, err := url.ParseRequestURI(endpoint); err == nil {
 			return endpoint, nil
