@@ -2,10 +2,11 @@ package fetchgo
 
 import (
 	"encoding/json"
+
 	. "github.com/cdvelop/tinystring"
 )
 
-// JSONEncoder implements the Encoder interface for JSON data.
+// JSONEncoder implements the encoder interface for JSON data.
 type JSONEncoder struct{}
 
 // Encode marshals the given data into a JSON byte slice.
@@ -18,7 +19,7 @@ func (e JSONEncoder) Decode(data []byte, v any) error {
 	return json.Unmarshal(data, v)
 }
 
-// RawEncoder implements the Encoder interface for raw byte data.
+// RawEncoder implements the encoder interface for raw byte data.
 // It acts as a pass-through for []byte and converts string to []byte.
 type RawEncoder struct{}
 

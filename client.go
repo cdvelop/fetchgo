@@ -8,7 +8,7 @@ type Client struct {
 	defaultHeaders []string    // Internal storage for headers: ["key1", "value1", "key2", "value2"]
 	TimeoutMS      int         // Request timeout in milliseconds.
 	RequestType    requestType // Default request type (e.g., RequestJSON, RequestRaw).
-	encoder        Encoder     // Optional: custom encoder for request bodies. If nil, a default is used based on RequestType.
+	encoder        encoder     // Optional: custom encoder for request bodies. If nil, a default is used based on RequestType.
 }
 
 // SendRequest sends an HTTP request and invokes the callback with the result.

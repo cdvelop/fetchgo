@@ -100,17 +100,17 @@ func (c *Client) SendRequest(method, url string, body any, callback func(any, er
 ```
 
 ### 6. Data Encoding/Decoding Strategy ✅ DECIDED
-**Decision**: **Pluggable Encoder Interface**
+**Decision**: **Pluggable encoder Interface**
 
 **Implementation**:
 ```go
-type Encoder interface {
+type encoder interface {
     Encode(any) ([]byte, error)
     Decode([]byte, &any) error
 }
 
 type Client struct {
-    encoder Encoder // Optional, defaults NONE
+    encoder encoder // Optional, defaults NONE
 }
 ```
 
@@ -136,7 +136,7 @@ type Client struct {
     defaultHeaders []string    // TinyGo friendly: ["key1", "value1", "key2", "value2"] (private)
     TimeoutMS int              // Numeric timeout in milliseconds, environment-specific handling
     RequestType    requestType // private: use Client options or helpers to set
-    encoder        Encoder
+    encoder        encoder
 }
 ```
 
@@ -193,13 +193,13 @@ func (c *Client) SetHeader(key, value string) { c.upsertHeader(key, value, true)
 
 **Final Implementation**: The `requestType` will be a field on the `Client` struct and will determine the `Content-Type` header and body encoding for all requests made with that client instance.
 
-### 4. 🔌 **Encoder Interface Implementation** ✅ DECIDED
+### 4. 🔌 **encoder Interface Implementation** ✅ DECIDED
 **Decision**: **Option C** (JSON and Raw encoders) is approved. This provides a balanced set of default encoders that cover the most common scenarios (structured data and binary/pass-through data) without adding unnecessary complexity.
 
 **Final Implementation**:
 - `JSONEncoder`: Default for `RequestJSON`.
 - `RawEncoder`: Default for `RequestRaw`.
-- The `Encoder` interface and pluggable design are approved.
+- The `encoder` interface and pluggable design are approved.
 
 ### 5. � File and Binary Payload Handling ✅ DECIDED
 
@@ -228,7 +228,7 @@ func (c *Client) SetHeader(key, value string) { c.upsertHeader(key, value, true)
 ```
 fetchgo/
 ├── client.go          // Main Client struct and public API (SendRequest)
-├── types.go           // Public types (requestType) and interfaces (Encoder)
+├── types.go           // Public types (requestType) and interfaces (encoder)
 ├── encoders.go        // Default encoder implementations (JSON, Raw)
 ├── client_wasm.go     // WASM-specific implementation (doRequest, timeout)
 ├── client_stdlib.go   // StdLib implementation (doRequest, timeout, file handling)
@@ -273,8 +273,8 @@ fetchgo/
 - **Zero External Dependencies**: Besides tinystring, completely self-contained
 
 ### Functions to Replace from model Package
-1. **DataConverter.EncodeMaps()** → Pluggable Encoder interface
-2. **DataConverter.DecodeMaps()** → Pluggable Encoder interface  
+1. **DataConverter.EncodeMaps()** → Pluggable encoder interface
+2. **DataConverter.DecodeMaps()** → Pluggable encoder interface  
 3. **Logger interface** → Removed (keep library simple)
 4. **Error handling** → `tinystring.Err()` and `tinystring.Errf()`
 
@@ -346,7 +346,7 @@ fetchgo/
 ### Phase 1: Core Foundation (Immediate)
 1. ✅ **Create project structure** with build tags
 2. ✅ **Implement Client struct** with TinyGo-optimized fields
-3. ✅ **Create Encoder interface** and JSON/Raw implementations
+3. ✅ **Create encoder interface** and JSON/Raw implementations
 4. ✅ **Build basic SendRequest** with goroutines + callbacks
 5. ✅ **Implement environment-specific timeout handling**
 6. ✅ **Add tinystring integration** for errors and conversions
