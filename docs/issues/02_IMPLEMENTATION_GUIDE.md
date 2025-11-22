@@ -12,7 +12,7 @@ This guide provides a step-by-step checklist for refactoring the `fetchgo` libra
     - [ ] Implement the `SetCORS(mode string, credentials bool) *Fetchgo` method (chainable).
     - [ ] Implement `NewClient(timeoutMS int) Client` method (NO baseURL parameter).
     - [ ] Implement the internal `getJSONEncoder() encoder` method (platform-specific).
-    - [ ] Implement the internal `getTinyBinEncoder() encoder` method (returns TinyBinEncoder with tb).
+    - [ ] Implement the internal `getTinyBinEncoder() encoder` method (returns tinyBinEncoder with tb).
 
 - [ ] **Modify `client.go`**:
     - [ ] Define the private `client` struct (lowercase `c`). It should contain ONLY: `defaultHeaders map[string]string`, `timeoutMS int`, and `*Fetchgo` reference.
@@ -60,7 +60,7 @@ This guide provides a step-by-step checklist for refactoring the `fetchgo` libra
 
 - [ ] **Create `codecs_shared.go`**:
     - [ ] No build tags needed.
-    - [ ] Define `TinyBinEncoder` struct with `tb *tinybin.TinyBin` field.
+    - [ ] Define `tinyBinEncoder` struct with `tb *tinybin.TinyBin` field.
     - [ ] Implement its `Encode(data any) ([]byte, error)` method:
         - Calls `e.tb.Encode(data)`
 

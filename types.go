@@ -1,10 +1,9 @@
 package fetchgo
 
-// encoder defines the interface for encoding and decoding data.
-// This allows for pluggable serialization strategies (e.g., JSON, form, raw).
+// encoder defines the interface for encoding data.
+// This allows for pluggable serialization strategies (e.g., JSON, TinyBin).
 type encoder interface {
 	Encode(data any) ([]byte, error)
-	Decode(data []byte, v any) error
 }
 
 // requestType is a private type that defines how the request body should be

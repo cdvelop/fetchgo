@@ -15,12 +15,29 @@ echo "=========================================="
 echo "Starting test server for WASM tests..."
 echo "=========================================="
 
+# Remove old URL file if exists
+rm -f .test_server_url
+
 # Start test server in background
 (cd testserver && go run main.go) &
 SERVER_PID=$!
 
-# Wait for server to start
-sleep 2
+# Wait for server to start and write URL file
+for i in {1..30}; do
+    if [ -f .test_server_url ]; then
+        break
+    fi
+    sleep 0.1
+done
+
+if [ ! -f .test_server_url ]; then
+    echo "❌ Server failed to start"
+    kill $SERVER_PID 2>/dev/null
+    exit 1
+fi
+
+SERVER_URL=$(cat .test_server_url)
+echo "Server started at: $SERVER_URL"
 
 echo ""
 echo "=========================================="
@@ -43,6 +60,9 @@ WASM_EXIT_CODE=$?
 # Stop test server
 kill $SERVER_PID 2>/dev/null
 wait $SERVER_PID 2>/dev/null
+
+# Clean up URL file
+rm -f .test_server_url
 
 if [ $WASM_EXIT_CODE -ne 0 ]; then
     echo ""

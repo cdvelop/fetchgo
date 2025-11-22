@@ -136,7 +136,7 @@ func (f *Fetchgo) getJSONEncoder() encoder {
 
 // getTinyBinEncoder returns TinyBin encoder (cross-platform)
 func (f *Fetchgo) getTinyBinEncoder() encoder {
-    return &TinyBinEncoder{tb: f.tb}
+    return &tinyBinEncoder{tb: f.tb}
 }
 
 // Note: No decoder is needed. The response is returned as raw []byte.
@@ -196,7 +196,7 @@ func (e *wasmJSONEncoder) Encode(data any) ([]byte, error) {
 
 ### Cross-Platform Codecs
 
-The `TinyBinEncoder` works on both platforms without build tags.
+The `tinyBinEncoder` works on both platforms without build tags.
 
 ```go
 // codecs_shared.go
@@ -204,12 +204,12 @@ package fetchgo
 
 import "github.com/cdvelop/tinybin"
 
-// TinyBinEncoder encodes data using TinyBin
-type TinyBinEncoder struct {
+// tinyBinEncoder encodes data using TinyBin
+type tinyBinEncoder struct {
     tb *tinybin.TinyBin
 }
 
-func (e *TinyBinEncoder) Encode(data any) ([]byte, error) {
+func (e *tinyBinEncoder) Encode(data any) ([]byte, error) {
     return e.tb.Encode(data)
 }
 ```

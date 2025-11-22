@@ -3,22 +3,32 @@
 package fetchgo_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/cdvelop/fetchgo"
 )
 
 func TestWasm(t *testing.T) {
-	// Note: For WASM tests, a test server should be running on localhost:8080
-	// You can start it manually or modify the test setup accordingly.
-	client := &fetchgo.Client{BaseURL: "http://localhost:8080"}
+	// Read server URL from file (written by test server on startup)
+	urlBytes, err := os.ReadFile(".test_server_url")
+	if err != nil {
+		t.Fatalf("Failed to read server URL from .test_server_url: %v. Make sure test server is running.", err)
+	}
+	serverURL := string(urlBytes)
+
+	client := fetchgo.New().NewClient(serverURL, 0)
 
 	t.Run("Get", func(t *testing.T) { SendRequest_GetShared(t, client) })
 	t.Run("PostJSON", func(t *testing.T) { SendRequest_PostJSONShared(t, client) })
-	t.Run("TimeoutSuccess", func(t *testing.T) { SendRequest_TimeoutSuccessShared(t, client) })
-	t.Run("TimeoutFailure", func(t *testing.T) { SendRequest_TimeoutFailureShared(t, client) })
+	t.Run("TimeoutSuccess", func(t *testing.T) {
+		timeoutClient := fetchgo.New().NewClient(serverURL, 200)
+		SendRequest_TimeoutSuccessShared(t, timeoutClient)
+	})
+	t.Run("TimeoutFailure", func(t *testing.T) {
+		timeoutClient := fetchgo.New().NewClient(serverURL, 50)
+		SendRequest_TimeoutFailureShared(t, timeoutClient)
+	})
 	t.Run("ServerError", func(t *testing.T) { SendRequest_ServerErrorShared(t, client) })
-	// PostFile test skipped in WASM - requires actual File object from browser input
-	// In WASM, files must come from <input type="file"> or drag-and-drop, not filesystem paths
-	// t.Run("PostFile", func(t *testing.T) { SendRequest_PostFileShared(t, client) })
+	t.Run("PostFile", func(t *testing.T) { SendRequest_PostFileShared(t, client) })
 }

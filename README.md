@@ -19,19 +19,20 @@ import (
 )
 
 func main() {
-    client := &fetchgo.Client{
-        BaseURL: "https://jsonplaceholder.typicode.com",
-    }
+    // Create a fetchgo instance
+    fg := fetchgo.New()
+    
+    // Create a client with base URL and timeout
+    client := fg.NewClient("https://jsonplaceholder.typicode.com", 5000)
 
-    client.SendRequest("GET", "/posts/1", nil, func(result any, err error) {
+    // Send JSON request
+    client.SendJSON("GET", "/posts/1", nil, func(result []byte, err error) {
         if err != nil {
             fmt.Printf("Error: %v\n", err)
             return
         }
 
-        if body, ok := result.([]byte); ok {
-            fmt.Printf("Response: %s\n", string(body))
-        }
+        fmt.Printf("Response: %s\n", string(result))
     })
 
     // Keep the program running to see the response
@@ -45,267 +46,192 @@ func main() {
 
 #### `Fetchgo` struct
 
-The main library struct. Currently used primarily for initialization.
+The main library struct that manages encoders and configuration.
 
 ```go
-type Fetchgo struct{}
+type Fetchgo struct {
+    // Internal fields for TinyBin and CORS configuration
+}
 
 func New() *Fetchgo
 ```
 
-#### `Client` struct
+#### `Client` interface
 
-The main HTTP client that handles requests across different platforms.
+The HTTP client interface that provides methods for sending requests.
 
 ```go
-type Client struct {
-    BaseURL        string      // Base URL for all requests, e.g., "https://api.example.com"
-    defaultHeaders []string    // Internal storage for headers: ["key1", "value1", "key2", "value2"]
-    TimeoutMS      int         // Request timeout in milliseconds
-    RequestType    requestType // Default request type (e.g., RequestJSON, RequestRaw)
-    encoder        encoder     // Optional: custom encoder for request bodies
+type Client interface {
+    SendJSON(method, url string, body any, callback func([]byte, error))
+    SendBinary(method, url string, body any, callback func([]byte, error))
+    SetHeader(key, value string)
 }
 ```
 
 #### `encoder` interface
 
-Interface for encoding and decoding data, allowing pluggable serialization strategies.
+Interface for encoding data, allowing pluggable serialization strategies.
 
 ```go
 type encoder interface {
     Encode(data any) ([]byte, error)
-    Decode(data []byte, v any) error
 }
 ```
 
-### Request Types
-
-Constants that define how request bodies should be encoded:
-
-- `RequestJSON` - Encode request body as JSON (`application/json`)
-- `RequestForm` - Encode request body as form data (`application/x-www-form-urlencoded`)
-- `RequestMultipart` - Encode request body as multipart form data (`multipart/form-data`)
-- `RequestRaw` - Send request body as-is (raw bytes)
-
 ### Client Methods
 
-#### `SendRequest(method, url, body, callback)`
+#### `SendJSON(method, url, body, callback)`
 
-Sends an HTTP request asynchronously and invokes the callback with the result.
+Sends an HTTP request with JSON encoding. The body is encoded as JSON and sent with `Content-Type: application/json; charset=utf-8`. The callback receives the raw response body as `[]byte`.
 
 ```go
-func (c *Client) SendRequest(method, url string, body any, callback func(any, error))
+func SendJSON(method, url string, body any, callback func([]byte, error))
 ```
 
-**Parameters:**
-- `method` - HTTP method (GET, POST, PUT, DELETE, etc.)
-- `url` - Request URL (can be relative if BaseURL is set, or absolute)
-- `body` - Request body (type depends on RequestType or custom encoder)
-- `callback` - Function called with response data and error
+#### `SendBinary(method, url, body, callback)`
 
-**Example:**
-```go
-client.SendRequest("POST", "/users", userData, func(result any, err error) {
-    if err != nil {
-        log.Printf("Request failed: %v", err)
-        return
-    }
-
-    if body, ok := result.([]byte); ok {
-        fmt.Printf("Response: %s", string(body))
-    }
-})
-```
-
-#### `AddHeader(key, value)`
-
-Adds a header to the client's default headers. Allows duplicate header keys.
+Sends an HTTP request with TinyBin encoding. The body is encoded with TinyBin and sent with `Content-Type: application/octet-stream`. The callback receives the raw response body as `[]byte`.
 
 ```go
-func (c *Client) AddHeader(key, value string)
-```
-
-**Example:**
-```go
-client := &fetchgo.Client{BaseURL: "https://api.example.com"}
-client.AddHeader("Authorization", "Bearer token123")
-client.AddHeader("X-Custom-Header", "value")
+func SendBinary(method, url string, body any, callback func([]byte, error))
 ```
 
 #### `SetHeader(key, value)`
 
-Sets a header, ensuring there's at most one entry for the given key. Replaces existing values.
+Sets a default header that will be included in all requests from this client.
 
 ```go
-func (c *Client) SetHeader(key, value string)
+func SetHeader(key, value string)
 ```
 
-**Example:**
+### Creating Clients
+
+#### `NewClient(baseURL, timeoutMS)`
+
+Creates a new HTTP client with the specified base URL and timeout.
+
 ```go
-client := &fetchgo.Client{BaseURL: "https://api.example.com"}
-client.SetHeader("Authorization", "Bearer token123")
-client.SetHeader("Authorization", "Bearer newtoken456") // Replaces previous value
+func (f *Fetchgo) NewClient(baseURL string, timeoutMS int) Client
 ```
 
-### Built-in Encoders
+**Parameters:**
+- `method` - HTTP method (GET, POST, PUT, DELETE, etc.)
+- `url` - Request URL (can be relative if baseURL is set, or absolute)
+- `body` - Request body data to encode
+- `callback` - Function called with response data as `[]byte` and error
 
-#### `JSONEncoder`
-
-Implements JSON encoding/decoding for request and response bodies.
-
-```go
-type JSONEncoder struct{}
-
-func (e JSONEncoder) Encode(data any) ([]byte, error)
-func (e JSONEncoder) Decode(data []byte, v any) error
-```
-
-**Example:**
-```go
-client := &fetchgo.Client{
-    BaseURL: "https://api.example.com",
-    RequestType: fetchgo.RequestJSON,
-}
-
-// Send JSON data
-data := map[string]string{"name": "John", "email": "john@example.com"}
-client.SendRequest("POST", "/users", data, func(result any, err error) {
-    // result will be []byte containing JSON response
-})
-```
-
-#### `RawEncoder`
-
-Implements raw byte encoding/decoding. Useful for sending files or binary data.
+**Examples:**
 
 ```go
-type RawEncoder struct{}
-
-func (e RawEncoder) Encode(data any) ([]byte, error)
-func (e RawEncoder) Decode(data []byte, v any) error
-```
-
-**Example:**
-```go
-client := &fetchgo.Client{
-    BaseURL: "https://api.example.com",
-    RequestType: fetchgo.RequestRaw,
-}
-
-// Send raw bytes
-rawData := []byte("raw binary data")
-client.SendRequest("POST", "/upload", rawData, func(result any, err error) {
-    // result will be []byte containing raw response
-})
-
-// Send file path (will be read as bytes)
-client.SendRequest("POST", "/upload", "/path/to/file.txt", func(result any, err error) {
-    // result will be []byte containing file contents
-})
-```
-
-### Configuration Options
-
-#### BaseURL
-
-Set the base URL for all requests. Relative URLs will be resolved against this base.
-
-```go
-client := &fetchgo.Client{
-    BaseURL: "https://api.example.com",
-}
-
-// These are equivalent:
-// client.SendRequest("GET", "/users", nil, callback)
-// client.SendRequest("GET", "https://api.example.com/users", nil, callback)
-```
-
-#### TimeoutMS
-
-Set request timeout in milliseconds.
-
-```go
-client := &fetchgo.Client{
-    BaseURL: "https://api.example.com",
-    TimeoutMS: 5000, // 5 second timeout
-}
-```
-
-#### RequestType
-
-Set the default request type for all requests.
-
-```go
-client := &fetchgo.Client{
-    BaseURL: "https://api.example.com",
-    RequestType: fetchgo.RequestJSON,
-}
-```
-
-#### Custom encoder
-
-Use a custom encoder for specialized serialization needs.
-
-```go
-client := &fetchgo.Client{
-    BaseURL: "https://api.example.com",
-    encoder: &CustomEncoder{},
-}
-```
-
-### Advanced Usage Examples
-
-#### Multiple Headers
-
-```go
-client := &fetchgo.Client{BaseURL: "https://api.example.com"}
-
-// Add multiple headers
-client.AddHeader("Authorization", "Bearer token123")
-client.AddHeader("Content-Type", "application/json")
-client.AddHeader("X-Client-Version", "1.0")
-
-client.SendRequest("GET", "/data", nil, func(result any, err error) {
-    // All headers will be sent with the request
-})
-```
-
-#### Different Request Types
-
-```go
-client := &fetchgo.Client{BaseURL: "https://httpbin.org"}
-
 // JSON request
-jsonData := map[string]string{"name": "John"}
-client.SendRequest("POST", "/post", jsonData, func(result any, err error) {
-    // Content-Type: application/json
-})
-
-// Raw request
-rawData := []byte("raw data")
-client.SendRequest("POST", "/post", rawData, func(result any, err error) {
-    // Content-Type: application/octet-stream
-})
-```
-
-#### Error Handling
-
-```go
-client := &fetchgo.Client{BaseURL: "https://api.example.com"}
-
-client.SendRequest("GET", "/users/999", nil, func(result any, err error) {
+client.SendJSON("POST", "/users", userData, func(result []byte, err error) {
     if err != nil {
-        // Handle different types of errors
         log.Printf("Request failed: %v", err)
         return
     }
+    fmt.Printf("Response: %s", string(result))
+})
 
-    // Process successful response
-    if body, ok := result.([]byte); ok {
-        fmt.Printf("Response: %s", string(body))
+// Binary request
+client.SendBinary("POST", "/upload", fileData, func(result []byte, err error) {
+    if err != nil {
+        log.Printf("Upload failed: %v", err)
+        return
     }
+    fmt.Printf("Upload successful")
 })
 ```
+
+#### `SetHeader(key, value)`
+
+Sets a default header that will be included in all requests from this client. Replaces any existing header with the same key.
+
+```go
+func SetHeader(key, value string)
+```
+
+**Example:**
+```go
+fg := fetchgo.New()
+client := fg.NewClient("https://api.example.com", 5000)
+client.SetHeader("Authorization", "Bearer token123")
+client.SetHeader("Content-Type", "application/json")
+```
+
+### Data Encoding
+
+#### JSON Encoding (`SendJSON`)
+
+Automatically encodes request bodies as JSON with `Content-Type: application/json; charset=utf-8`. Response bodies are returned as raw `[]byte` for you to decode as needed.
+
+#### TinyBin Encoding (`SendBinary`)
+
+Automatically encodes request bodies using TinyBin serialization with `Content-Type: application/octet-stream`. Response bodies are returned as raw `[]byte` for you to decode as needed.
+
+**Special case for raw bytes:** When sending `[]byte` data with `SendBinary`, the data is sent as-is without TinyBin encoding.
+
+### Configuration
+
+#### Base URL and Timeout
+
+Configure the base URL and request timeout when creating a client:
+
+```go
+fg := fetchgo.New()
+client := fg.NewClient("https://api.example.com", 5000) // 5 second timeout
+```
+
+#### Headers
+
+Set default headers that apply to all requests:
+
+```go
+client.SetHeader("Authorization", "Bearer token123")
+client.SetHeader("User-Agent", "MyApp/1.0")
+```
+
+### Complete Example
+
+```go
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "github.com/cdvelop/fetchgo"
+)
+
+type User struct {
+    Name  string `json:"name"`
+    Email string `json:"email"`
+}
+
+func main() {
+    fg := fetchgo.New()
+    client := fg.NewClient("https://jsonplaceholder.typicode.com", 10000)
+    
+    client.SetHeader("Authorization", "Bearer mytoken")
+    
+    // Create a user
+    user := User{Name: "John Doe", Email: "john@example.com"}
+    
+    client.SendJSON("POST", "/users", user, func(response []byte, err error) {
+        if err != nil {
+            fmt.Printf("Error: %v\n", err)
+            return
+        }
+        
+        // Parse the JSON response
+        var createdUser User
+        if err := json.Unmarshal(response, &createdUser); err != nil {
+            fmt.Printf("Failed to parse response: %v\n", err)
+            return
+        }
+        
+        fmt.Printf("Created user: %+v\n", createdUser)
+    })
+    
+    // Keep the program running
 
 ## Platform Support
 
@@ -315,7 +241,32 @@ client.SendRequest("GET", "/users/999", nil, func(result any, err error) {
 
 ## Dependencies
 
+- `github.com/cdvelop/tinybin` - Binary serialization
 - `github.com/cdvelop/tinystring` - String utility functions
+
+## Migration from v1
+
+If you're upgrading from the old API:
+
+**Old API:**
+```go
+client := &fetchgo.Client{
+    BaseURL: "https://api.example.com",
+    RequestType: fetchgo.RequestJSON,
+}
+client.SendRequest("POST", "/users", data, func(result any, err error) {
+    // result was any, needed type assertion
+})
+```
+
+**New API:**
+```go
+fg := fetchgo.New()
+client := fg.NewClient("https://api.example.com", 5000)
+client.SendJSON("POST", "/users", data, func(result []byte, err error) {
+    // result is always []byte
+})
+```
 
 ## License
 

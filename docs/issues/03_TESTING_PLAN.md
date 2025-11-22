@@ -17,14 +17,14 @@
         - Verify it returns a valid JSON encoder.
         - Test encoding a struct returns valid JSON bytes.
     - [ ] Test `getTinyBinEncoder()`:
-        - Verify it returns a `TinyBinEncoder` with valid `tb` instance.
+        - Verify it returns a `tinyBinEncoder` with valid `tb` instance.
         - Test encoding a struct returns valid TinyBin bytes.
     - [ ] **Note**: No `getDecoder()` tests needed. Responses are returned as raw `[]byte`.
 
 - [ ] **Test Codecs**:
     - [ ] Test `stdlibJSONEncoder` (`!wasm`): Verify that a Go struct can be encoded to JSON `[]byte`.
     - [ ] Test `wasmJSONEncoder` (`wasm`): Verify that a Go struct can be encoded and returns valid JSON as `[]byte`.
-    - [ ] Test `TinyBinEncoder`: Verify that a Go struct can be encoded to TinyBin `[]byte`.
+    - [ ] Test `tinyBinEncoder`: Verify that a Go struct can be encoded to TinyBin `[]byte`.
 
 ## Phase 2: End-to-End (E2E) Request Tests
 
