@@ -1,4 +1,4 @@
 github.com/cdvelop/tinybin v0.2.7 h1:uM2rsVNNJStki97jcLBq1i8lmJYLJL89X96rtxXqTiU=
 github.com/cdvelop/tinybin v0.2.7/go.mod h1:Qv8TvS/oWbKmAjYdwXnA31YRbHW3xozWKBNOwhacMA4=
-github.com/cdvelop/tinystring v0.10.4 h1:Vsj/2WU2I682TAGV0GMYujMhZNHgFlnc3gjKy53GqOg=
-github.com/cdvelop/tinystring v0.10.4/go.mod h1:m12IsLVkhIRv/kA7bercPtzfdZhx2WtuZUPZWZhUsgw=
+github.com/cdvelop/tinystring v0.11.0 h1:CGZt2u3JoRyxAFrpKNICGVDCHP2bI0d8ejxFlgo8SYQ=
+github.com/cdvelop/tinystring v0.11.0/go.mod h1:m12IsLVkhIRv/kA7bercPtzfdZhx2WtuZUPZWZhUsgw=
