@@ -1,2 +1,5 @@
 coverage.out
+*.log
+*.env
+server
 .test_server_url
