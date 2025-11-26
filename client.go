@@ -8,16 +8,36 @@ type client struct {
 	fetchgo        *Fetchgo // Reference to parent for codec/config access
 }
 
-// SendJSON encodes body as JSON and sends HTTP request.
 func (c *client) SendJSON(method, url string, body any, callback func([]byte, error)) {
-	encoder := c.fetchgo.getJSONEncoder()
-	c.doRequest(method, url, "application/json; charset=utf-8", encoder, body, callback)
+	var encodedBody []byte
+	var err error
+
+	if body != nil {
+		encodedBody, err = c.fetchgo.tj.Encode(body)
+		if err != nil {
+			callback(nil, err)
+			return
+		}
+	}
+	c.doRequest(method, url, "application/json; charset=utf-8", encodedBody, callback)
 }
 
 // SendBinary encodes body with TinyBin and sends HTTP request.
 func (c *client) SendBinary(method, url string, body any, callback func([]byte, error)) {
-	encoder := c.fetchgo.getTinyBinEncoder()
-	c.doRequest(method, url, "application/octet-stream", encoder, body, callback)
+	var encodedBody []byte
+	var err error
+
+	if b, ok := body.([]byte); ok {
+		encodedBody = b
+	} else {
+		encodedBody, err = c.fetchgo.tb.Encode(body)
+		if err != nil {
+			callback(nil, err)
+			return
+		}
+	}
+
+	c.doRequest(method, url, "application/octet-stream", encodedBody, callback)
 }
 
 // SetHeader adds or updates a default header for all requests from this client.

@@ -19,9 +19,3 @@ type Client interface {
 	// SetHeader sets a default header for all requests from this client.
 	SetHeader(key, value string)
 }
-
-// encoder defines the interface for encoding data.
-// This allows for pluggable serialization strategies (e.g., JSON, TinyBin).
-type encoder interface {
-	Encode(data any) ([]byte, error)
-}

@@ -9,7 +9,7 @@ import (
 )
 
 // doRequest is the WASM implementation for making an HTTP request using the browser's fetch API.
-func (c *client) doRequest(method, endpoint string, contentType string, encoder encoder, body any, callback func([]byte, error)) {
+func (c *client) doRequest(method, endpoint string, contentType string, body []byte, callback func([]byte, error)) {
 	// 1. Build the full URL.
 	fullURL, err := c.buildURL(endpoint)
 	if err != nil {
@@ -17,18 +17,12 @@ func (c *client) doRequest(method, endpoint string, contentType string, encoder 
 		return
 	}
 
-	// 2. Encode the request body using the provided encoder.
+	// 2. Prepare request body.
 	var jsBody js.Value
-	if body != nil {
-		encodedBody, err := encoder.Encode(body)
-		if err != nil {
-			callback(nil, Errf("wasm encoding error: %s", err.Error()))
-			return
-		}
-
+	if len(body) > 0 {
 		// Convert Go byte slice to a JS Uint8Array's buffer.
-		uint8Array := js.Global().Get("Uint8Array").New(len(encodedBody))
-		js.CopyBytesToJS(uint8Array, encodedBody)
+		uint8Array := js.Global().Get("Uint8Array").New(len(body))
+		js.CopyBytesToJS(uint8Array, body)
 		jsBody = uint8Array.Get("buffer")
 	}
 

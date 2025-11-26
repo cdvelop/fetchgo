@@ -13,7 +13,7 @@ import (
 )
 
 // doRequest is the standard library implementation for making an HTTP request.
-func (c *client) doRequest(method, endpoint string, contentType string, encoder encoder, body any, callback func([]byte, error)) {
+func (c *client) doRequest(method, endpoint string, contentType string, body []byte, callback func([]byte, error)) {
 	go func() {
 		// 1. Build the full URL.
 		fullURL, err := c.buildURL(endpoint)
@@ -22,15 +22,10 @@ func (c *client) doRequest(method, endpoint string, contentType string, encoder 
 			return
 		}
 
-		// 2. Encode the request body using the provided encoder.
+		// 2. Prepare body reader.
 		var bodyReader io.Reader
-		if body != nil {
-			encodedBody, err := encoder.Encode(body)
-			if err != nil {
-				callback(nil, Errf("failed to encode request body: %s", err.Error()))
-				return
-			}
-			bodyReader = bytes.NewReader(encodedBody)
+		if len(body) > 0 {
+			bodyReader = bytes.NewReader(body)
 		}
 
 		// 3. Prepare the headers.
