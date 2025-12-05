@@ -1,6 +1,6 @@
 github.com/cdvelop/tinybin v0.2.7 h1:uM2rsVNNJStki97jcLBq1i8lmJYLJL89X96rtxXqTiU=
 github.com/cdvelop/tinybin v0.2.7/go.mod h1:Qv8TvS/oWbKmAjYdwXnA31YRbHW3xozWKBNOwhacMA4=
-github.com/cdvelop/tinyjson v0.0.7 h1:WosFY+I6OjAxIFPzFiatTiL+ljel1ZYpS18QmRaC1ik=
-github.com/cdvelop/tinyjson v0.0.7/go.mod h1:rQayqMxEL5VyTVp0OcqKmuV9d4tLYI3sEibDLsDGNP4=
+github.com/cdvelop/tinyjson v0.0.8 h1:jRDlUfI8dCCuQQPVMEWGpB+D3EoSrsYdsqEmNUOxWaA=
+github.com/cdvelop/tinyjson v0.0.8/go.mod h1:rQayqMxEL5VyTVp0OcqKmuV9d4tLYI3sEibDLsDGNP4=
 github.com/cdvelop/tinystring v0.11.0 h1:CGZt2u3JoRyxAFrpKNICGVDCHP2bI0d8ejxFlgo8SYQ=
 github.com/cdvelop/tinystring v0.11.0/go.mod h1:m12IsLVkhIRv/kA7bercPtzfdZhx2WtuZUPZWZhUsgw=
