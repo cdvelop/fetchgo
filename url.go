@@ -1,7 +1,7 @@
-package fetchgo
+package fetch
 
 import (
-	. "github.com/cdvelop/tinystring"
+	. "github.com/tinywasm/fmt"
 )
 
 // buildURL constructs the full request URL.

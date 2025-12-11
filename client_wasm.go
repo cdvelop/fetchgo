@@ -1,11 +1,11 @@
 //go:build wasm
 
-package fetchgo
+package fetch
 
 import (
 	"syscall/js"
 
-	. "github.com/cdvelop/tinystring"
+	. "github.com/tinywasm/fmt"
 )
 
 // doRequest is the WASM implementation for making an HTTP request using the browser's fetch API.

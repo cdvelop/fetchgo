@@ -5,15 +5,15 @@ package main
 import (
 	"syscall/js"
 
-	"github.com/cdvelop/fetchgo"
-	"github.com/cdvelop/fetchgo/example/model"
+	"github.com/tinywasm/fetch"
+	"github.com/tinywasm/fetch/example/model"
 )
 
 func main() {
 	// Get the current window location origin to use as base URL
 	origin := js.Global().Get("location").Get("origin").String()
 
-	fg := fetchgo.New()
+	fg := fetch.New()
 	client := fg.NewClient(origin, 5000)
 
 	// Setup UI

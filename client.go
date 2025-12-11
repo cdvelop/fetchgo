@@ -1,4 +1,4 @@
-package fetchgo
+package fetch
 
 // client is the private implementation of the Client interface.
 type client struct {
@@ -13,7 +13,7 @@ func (c *client) SendJSON(method, url string, body any, callback func([]byte, er
 	var err error
 
 	if body != nil {
-		encodedBody, err = c.fetchgo.tj.Encode(body)
+		encodedBody, err = c.fetch.tj.Encode(body)
 		if err != nil {
 			callback(nil, err)
 			return
@@ -30,7 +30,7 @@ func (c *client) SendBinary(method, url string, body any, callback func([]byte, 
 	if b, ok := body.([]byte); ok {
 		encodedBody = b
 	} else {
-		encodedBody, err = c.fetchgo.tb.Encode(body)
+		encodedBody, err = c.fetch.tb.Encode(body)
 		if err != nil {
 			callback(nil, err)
 			return

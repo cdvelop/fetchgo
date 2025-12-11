@@ -1,4 +1,4 @@
-package fetchgo
+package fetch
 
 // getHeaders returns the default headers as a map for internal use.
 func (c *client) getHeaders() map[string]string {

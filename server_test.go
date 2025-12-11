@@ -1,6 +1,6 @@
 //go:build !wasm
 
-package fetchgo_test
+package fetch
 
 import (
 	"io"

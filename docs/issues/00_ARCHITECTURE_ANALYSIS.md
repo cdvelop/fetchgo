@@ -183,7 +183,7 @@ client.SendRequest("GET", "https://api.google.com/data",
 // pkg/crudp/client.go
 package crudp
 
-import "github.com/cdvelop/fetchgo"
+import "github.com/tinywasm/fetch"
 
 type Client struct {
     http      fetchgo.Client

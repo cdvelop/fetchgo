@@ -1,12 +1,12 @@
 //go:build wasm
 
-package fetchgo_test
+package fetch
 
 import (
 	"os"
 	"testing"
 
-	"github.com/cdvelop/fetchgo"
+	"github.com/tinywasm/fetch"
 )
 
 func TestWasm(t *testing.T) {
@@ -17,16 +17,16 @@ func TestWasm(t *testing.T) {
 	}
 	serverURL := string(urlBytes)
 
-	client := fetchgo.New().NewClient(serverURL, 0)
+	client := fetch.New().NewClient(serverURL, 0)
 
 	t.Run("Get", func(t *testing.T) { SendRequest_GetShared(t, client) })
 	t.Run("PostJSON", func(t *testing.T) { SendRequest_PostJSONShared(t, client) })
 	t.Run("TimeoutSuccess", func(t *testing.T) {
-		timeoutClient := fetchgo.New().NewClient(serverURL, 200)
+		timeoutClient := fetch.New().NewClient(serverURL, 200)
 		SendRequest_TimeoutSuccessShared(t, timeoutClient)
 	})
 	t.Run("TimeoutFailure", func(t *testing.T) {
-		timeoutClient := fetchgo.New().NewClient(serverURL, 50)
+		timeoutClient := fetch.New().NewClient(serverURL, 50)
 		SendRequest_TimeoutFailureShared(t, timeoutClient)
 	})
 	t.Run("ServerError", func(t *testing.T) { SendRequest_ServerErrorShared(t, client) })

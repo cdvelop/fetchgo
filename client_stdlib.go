@@ -1,6 +1,6 @@
 //go:build !wasm
 
-package fetchgo
+package fetch
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	. "github.com/cdvelop/tinystring"
+	. "github.com/tinywasm/fmt"
 )
 
 // doRequest is the standard library implementation for making an HTTP request.

@@ -1,13 +1,13 @@
-package fetchgo_test
+package fetch
 
 import (
 	"os"
 	"testing"
 
-	"github.com/cdvelop/fetchgo"
+	"github.com/tinywasm/fetch"
 )
 
-func SendRequest_GetShared(t *testing.T, client fetchgo.Client) {
+func SendRequest_GetShared(t *testing.T, client fetch.Client) {
 	done := make(chan bool)
 	var responseBody []byte
 	var responseErr error
@@ -31,7 +31,7 @@ func SendRequest_GetShared(t *testing.T, client fetchgo.Client) {
 	}
 }
 
-func SendRequest_PostJSONShared(t *testing.T, client fetchgo.Client) {
+func SendRequest_PostJSONShared(t *testing.T, client fetch.Client) {
 	done := make(chan bool)
 	requestData := map[string]string{"message": "hello"}
 	var responseBody []byte
@@ -57,7 +57,7 @@ func SendRequest_PostJSONShared(t *testing.T, client fetchgo.Client) {
 	}
 }
 
-func SendRequest_TimeoutSuccessShared(t *testing.T, client fetchgo.Client) {
+func SendRequest_TimeoutSuccessShared(t *testing.T, client fetch.Client) {
 	done := make(chan bool)
 	var responseErr error
 
@@ -73,7 +73,7 @@ func SendRequest_TimeoutSuccessShared(t *testing.T, client fetchgo.Client) {
 	}
 }
 
-func SendRequest_TimeoutFailureShared(t *testing.T, client fetchgo.Client) {
+func SendRequest_TimeoutFailureShared(t *testing.T, client fetch.Client) {
 	done := make(chan bool)
 	var responseErr error
 
@@ -89,7 +89,7 @@ func SendRequest_TimeoutFailureShared(t *testing.T, client fetchgo.Client) {
 	}
 }
 
-func SendRequest_ServerErrorShared(t *testing.T, client fetchgo.Client) {
+func SendRequest_ServerErrorShared(t *testing.T, client fetch.Client) {
 	done := make(chan bool)
 	var responseErr error
 
@@ -105,7 +105,7 @@ func SendRequest_ServerErrorShared(t *testing.T, client fetchgo.Client) {
 	}
 }
 
-func SendRequest_PostFileShared(t *testing.T, client fetchgo.Client) {
+func SendRequest_PostFileShared(t *testing.T, client fetch.Client) {
 	// Create a temporary file with content.
 	tmpfile, err := os.CreateTemp("", "test_upload_*.txt")
 	if err != nil {

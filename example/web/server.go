@@ -12,8 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cdvelop/fetchgo/example/model"
-	"github.com/cdvelop/tinybin"
+	"github.com/tinywasm/fetch/example/model"
+	"github.com/tinywasm/tinybin"
 )
 
 type gzipResponseWriter struct {

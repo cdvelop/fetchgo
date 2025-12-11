@@ -6,12 +6,12 @@ Minimal Go HTTP library for unified requests in Browser (WASM) and Server.
 
 - **Unified API**: Write once, run on Server (`net/http`) and Browser (`syscall/js`).
 - **TinyGo Compatible**: Optimized for small WASM binaries (~45KB gzipped).
-- **Encoding Support**: Automatic JSON and [TinyBin](https://github.com/cdvelop/tinybin) encoding for structs (raw bytes sent as-is).
+- **Encoding Support**: Automatic JSON and [TinyBin](https://github.com/tinywasm/tinybin) encoding for structs (raw bytes sent as-is).
 
 ## Installation
 
 ```bash
-go get github.com/cdvelop/fetchgo
+go get github.com/tinywasm/fetch
 ```
 
 ## Usage
@@ -20,7 +20,7 @@ go get github.com/cdvelop/fetchgo
 package main
 
 import (
-    "github.com/cdvelop/fetchgo"
+    "github.com/tinywasm/fetch"
 )
 
 func main() {
@@ -50,7 +50,7 @@ func main() {
 ![browser](example/snapshots/browser.png)
 
 
-### servidor ([golite](github.com/cdvelop/golite))
+### servidor ([golite](github.com/tinywasm/tinywasm))
 ![server](example/snapshots/server.png)
 
 ## Documentation

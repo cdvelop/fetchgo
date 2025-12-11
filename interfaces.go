@@ -1,4 +1,4 @@
-package fetchgo
+package fetch
 
 // Client defines the public interface for an HTTP client.
 type Client interface {

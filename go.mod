@@ -1,9 +1,9 @@
-module github.com/cdvelop/fetchgo
+module github.com/tinywasm/fetch
 
 go 1.25.2
 
 require (
-	github.com/cdvelop/tinybin v0.2.7
-	github.com/cdvelop/tinyjson v0.0.8
-	github.com/cdvelop/tinystring v0.11.0
+	github.com/tinywasm/fmt v0.12.2
+	github.com/tinywasm/json v0.0.10
+	github.com/tinywasm/tinybin v0.2.7
 )
