@@ -1,13 +1,13 @@
 package fetch
 
 import (
-	"github.com/tinywasm/tinybin"
+	"github.com/tinywasm/gobin"
 	"github.com/tinywasm/json"
 )
 
 // Fetchgo manages HTTP clients with explicit codec methods.
 type Fetchgo struct {
-	tb              *tinybin.TinyBin
+	tb              *gobin.TinyBin
 	tj              *json.TinyJSON
 	corsMode        string
 	corsCredentials bool
@@ -16,7 +16,7 @@ type Fetchgo struct {
 // New creates a new Fetchgo instance with sensible defaults.
 func New() *Fetchgo {
 	return &Fetchgo{
-		tb:              tinybin.New(),
+		tb:              gobin.New(),
 		tj:              json.New(),
 		corsMode:        "cors",
 		corsCredentials: false,

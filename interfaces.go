@@ -13,7 +13,7 @@ type Client interface {
 	// url MUST be absolute (e.g., "https://api.example.com/users")
 	// body is encoded with TinyBin, Content-Type: application/octet-stream
 	// The callback receives the raw response body as []byte.
-	// The user is responsible for decoding it using tinybin.Decode.
+	// The user is responsible for decoding it using gobin.Decode.
 	SendBinary(method, url string, body any, callback func([]byte, error))
 
 	// SetHeader sets a default header for all requests from this client.
