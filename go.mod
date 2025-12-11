@@ -7,4 +7,4 @@ require (
 	github.com/tinywasm/json v0.0.10
 )
 
-require github.com/tinywasm/gobin v0.2.12 // indirect
+require github.com/tinywasm/gobin v0.2.12
