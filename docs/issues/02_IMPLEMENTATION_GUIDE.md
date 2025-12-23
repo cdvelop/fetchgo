@@ -4,18 +4,18 @@ This guide provides a step-by-step checklist for refactoring the `fetchgo` libra
 
 ## Phase 1: Core Architecture
 
-**Goal**: Set up the new `Fetchgo` manager and `Client` structure with absolute URLs.
+**Goal**: Set up the new `Fetch` manager and `Client` structure with absolute URLs.
 
 - [ ] **Modify `fetchgo.go`**:
-    - [ ] Redefine the `Fetchgo` struct to include `tb *tinybin.TinyBin`, `corsMode string`, and `corsCredentials bool`.
-    - [ ] Implement the `New() *Fetchgo` constructor to initialize default values.
-    - [ ] Implement the `SetCORS(mode string, credentials bool) *Fetchgo` method (chainable).
+    - [ ] Redefine the `Fetch` struct to include `tb *tinybin.TinyBin`, `corsMode string`, and `corsCredentials bool`.
+    - [ ] Implement the `New() *Fetch` constructor to initialize default values.
+    - [ ] Implement the `SetCORS(mode string, credentials bool) *Fetch` method (chainable).
     - [ ] Implement `NewClient(timeoutMS int) Client` method (NO baseURL parameter).
     - [ ] Implement the internal `getJSONEncoder() encoder` method (platform-specific).
     - [ ] Implement the internal `getTinyBinEncoder() encoder` method (returns tinyBinEncoder with tb).
 
 - [ ] **Modify `client.go`**:
-    - [ ] Define the private `client` struct (lowercase `c`). It should contain ONLY: `defaultHeaders map[string]string`, `timeoutMS int`, and `*Fetchgo` reference.
+    - [ ] Define the private `client` struct (lowercase `c`). It should contain ONLY: `defaultHeaders map[string]string`, `timeoutMS int`, and `*Fetch` reference.
     - [ ] **IMPORTANT**: Remove any `baseURL` field. All URLs will be absolute.
     - [ ] Ensure `client` struct implements the `Client` interface.
     - [ ] Implement `SendJSON(method, url string, body any, callback func([]byte, error))`:

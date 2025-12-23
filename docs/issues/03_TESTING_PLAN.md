@@ -5,13 +5,13 @@
 ## Phase 1: Basic Setup & Unit Tests
 
 - [ ] **Test `fetchgo.go`**:
-    - [ ] Test `New()`: Verify that a new `Fetchgo` instance has the correct default values (`corsMode: "cors"`, `corsCredentials: false`, `tb` is not nil).
+    - [ ] Test `New()`: Verify that a new `Fetch` instance has the correct default values (`corsMode: "cors"`, `corsCredentials: false`, `tb` is not nil).
     - [ ] Test `SetCORS()`:
         - Verify that `SetCORS("cors", true)` correctly updates the `corsMode` and `corsCredentials` fields.
         - Verify that the method is chainable.
     - [ ] Test `NewClient()`:
         - Verify that it returns a non-nil `Client` interface.
-        - Verify the underlying `*client` struct has the correct `timeout` and a reference to the parent `Fetchgo` instance.
+        - Verify the underlying `*client` struct has the correct `timeout` and a reference to the parent `Fetch` instance.
         - **IMPORTANT**: Verify there is NO `baseURL` field in the struct.
     - [ ] Test `getJSONEncoder()`:
         - Verify it returns a valid JSON encoder.

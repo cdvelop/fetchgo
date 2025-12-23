@@ -1,4 +1,4 @@
-# Fetchgo Example
+# Fetch Example
 
 This example demonstrates how to use `fetchgo` to send binary data (TinyBin) from a Go/WASM client to a Go server.
 

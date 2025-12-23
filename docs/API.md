@@ -2,16 +2,16 @@
 
 ## Core Types
 
-### `Fetchgo` struct
+### `Fetch` struct
 
 The main library struct that manages encoders and configuration.
 
 ```go
-type Fetchgo struct {
+type Fetch struct {
     // Internal fields for TinyBin and CORS configuration
 }
 
-func New() *Fetchgo
+func New() *Fetch
 ```
 
 ### `Client` interface
@@ -71,7 +71,7 @@ func SetHeader(key, value string)
 Creates a new HTTP client with the specified base URL and timeout.
 
 ```go
-func (f *Fetchgo) NewClient(baseURL string, timeoutMS int) Client
+func (f *Fetch) NewClient(baseURL string, timeoutMS int) Client
 ```
 
 ## Configuration

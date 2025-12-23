@@ -11,9 +11,9 @@ The new architecture is based on a simple principle: **explicit encoding methods
 
 ## 2. Core Components
 
-### `Fetchgo` Struct: The Codec Manager
+### `Fetch` Struct: The Codec Manager
 
-The `Fetchgo` struct is the central point of the library. It is created once and manages all shared resources, including the TinyBin instance and CORS configuration.
+The `Fetch` struct is the central point of the library. It is created once and manages all shared resources, including the TinyBin instance and CORS configuration.
 
 ```go
 // fetchgo.go
@@ -21,16 +21,16 @@ package fetchgo
 
 import "github.com/tinywasm/tinybin"
 
-// Fetchgo manages HTTP clients with explicit codec methods.
-type Fetchgo struct {
+// Fetch manages HTTP clients with explicit codec methods.
+type Fetch struct {
     tb              *tinybin.TinyBin
     corsMode        string
     corsCredentials bool
 }
 
-// New creates a new Fetchgo instance with sensible defaults.
-func New() *Fetchgo {
-    return &Fetchgo{
+// New creates a new Fetch instance with sensible defaults.
+func New() *Fetch {
+    return &Fetch{
         tb:              tinybin.New(),
         corsMode:        "cors",
         corsCredentials: false,
@@ -38,14 +38,14 @@ func New() *Fetchgo {
 }
 
 // SetCORS configures CORS behavior for WASM/browser requests.
-func (f *Fetchgo) SetCORS(mode string, credentials bool) *Fetchgo {
+func (f *Fetch) SetCORS(mode string, credentials bool) *Fetch {
     f.corsMode = mode
     f.corsCredentials = credentials
     return f // Chainable
 }
 
 // NewClient creates a configured HTTP client.
-func (f *Fetchgo) NewClient(timeoutMS int) Client {
+func (f *Fetch) NewClient(timeoutMS int) Client {
     return &client{
         timeoutMS:      timeoutMS,
         fetchgo:        f, // Reference to parent
@@ -56,7 +56,7 @@ func (f *Fetchgo) NewClient(timeoutMS int) Client {
 
 ### `Client` Interface: The Public API
 
-The user interacts with a `Client` interface, which defines the available methods for making requests. This prevents direct instantiation of the client struct and ensures all clients are created correctly via the `Fetchgo` manager.
+The user interacts with a `Client` interface, which defines the available methods for making requests. This prevents direct instantiation of the client struct and ensures all clients are created correctly via the `Fetch` manager.
 
 **Key Design Decision:** No `baseURL` field. All URLs must be absolute. This allows a single client to make requests to multiple domains.
 
@@ -87,7 +87,7 @@ type Client interface {
 
 ### `client` struct: The (Private) Implementation
 
-The `client` struct is the private implementation that holds request-specific configuration and a reference to its parent `Fetchgo` instance.
+The `client` struct is the private implementation that holds request-specific configuration and a reference to its parent `Fetch` instance.
 
 ```go
 // client.go
@@ -95,7 +95,7 @@ The `client` struct is the private implementation that holds request-specific co
 type client struct {
     defaultHeaders map[string]string
     timeoutMS      int
-    fetchgo        *Fetchgo // Reference to parent for codec/config access
+    fetchgo        *Fetch // Reference to parent for codec/config access
 }
 
 // SendJSON encodes body as JSON and sends HTTP request.
@@ -124,18 +124,18 @@ func (c *client) SetHeader(key, value string) {
 
 ## 3. Automatic Codec Selection
 
-The `Fetchgo` instance is responsible for providing the correct encoder/decoder based on the `Content-Type` header.
+The `Fetch` instance is responsible for providing the correct encoder/decoder based on the `Content-Type` header.
 
 ```go
 // fetchgo.go (internal methods)
 
 // getJSONEncoder returns platform-specific JSON encoder
-func (f *Fetchgo) getJSONEncoder() encoder {
+func (f *Fetch) getJSONEncoder() encoder {
     return f.getJSONEncoder() // Platform-specific (stdlib or WASM)
 }
 
 // getTinyBinEncoder returns TinyBin encoder (cross-platform)
-func (f *Fetchgo) getTinyBinEncoder() encoder {
+func (f *Fetch) getTinyBinEncoder() encoder {
     return &tinyBinEncoder{tb: f.tb}
 }
 
@@ -159,7 +159,7 @@ package fetchgo
 
 import "encoding/json"
 
-func (f *Fetchgo) getJSONEncoder() encoder { return &stdlibJSONEncoder{} }
+func (f *Fetch) getJSONEncoder() encoder { return &stdlibJSONEncoder{} }
 
 // stdlibJSONEncoder encodes Go values to JSON []byte
 type stdlibJSONEncoder struct{}
@@ -181,7 +181,7 @@ package fetchgo
 
 import "syscall/js"
 
-func (f *Fetchgo) getJSONEncoder() encoder { return &wasmJSONEncoder{} }
+func (f *Fetch) getJSONEncoder() encoder { return &wasmJSONEncoder{} }
 
 // wasmJSONEncoder uses browser's JSON.stringify
 type wasmJSONEncoder struct{}
@@ -216,7 +216,7 @@ func (e *tinyBinEncoder) Encode(data any) ([]byte, error) {
 
 ## 5. CORS Configuration
 
-CORS settings are stored in the `Fetchgo` instance and applied in `client_wasm.go` when making the `fetch` call.
+CORS settings are stored in the `Fetch` instance and applied in `client_wasm.go` when making the `fetch` call.
 
 ```go
 // client_wasm.go

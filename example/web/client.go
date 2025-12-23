@@ -22,7 +22,7 @@ func main() {
 
 	// Title
 	h1 := document.Call("createElement", "h1")
-	h1.Set("innerHTML", "Fetchgo TinyBin Example")
+	h1.Set("innerHTML", "Fetch TinyBin Example")
 	body.Call("appendChild", h1)
 
 	// Info

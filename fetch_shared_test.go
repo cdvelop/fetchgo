@@ -1,4 +1,4 @@
-package fetch
+package fetch_test
 
 import (
 	"os"

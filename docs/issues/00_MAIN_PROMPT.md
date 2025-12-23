@@ -21,7 +21,7 @@ Hi Jules! This project is divided into two main parts:
 - `IMPLEMENTATION_GUIDE.md`: Step-by-step implementation checklist.
 
 **Key Changes**:
-- `Fetchgo` struct becomes a codec manager.
+- `Fetch` struct becomes a codec manager.
 - `New()` creates a zero-config instance.
 - `NewClient(timeoutMS)` creates clients WITHOUT a `baseURL` parameter.
 - **CRITICAL**: All URLs must be absolute (e.g., `https://api.example.com/users`).
@@ -41,7 +41,7 @@ Hi Jules! This project is divided into two main parts:
 - `TESTING_PLAN.md`: Detailed testing strategy and checklist.
 
 **Key Areas to Test**:
-- New `Fetchgo` instance and client creation (NO baseURL).
+- New `Fetch` instance and client creation (NO baseURL).
 - Automatic codec selection logic.
 - Platform-specific codecs (stdlib vs. WASM).
 - Simple encoder system (JSON for structs, raw pass-through for []byte).

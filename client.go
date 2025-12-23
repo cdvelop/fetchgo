@@ -5,7 +5,7 @@ type client struct {
 	baseURL        string
 	defaultHeaders map[string]string
 	timeoutMS      int
-	fetchgo        *Fetchgo // Reference to parent for codec/config access
+	fch            *Fetch // Reference to parent for codec/config access
 }
 
 func (c *client) SendJSON(method, url string, body any, callback func([]byte, error)) {
@@ -13,7 +13,7 @@ func (c *client) SendJSON(method, url string, body any, callback func([]byte, er
 	var err error
 
 	if body != nil {
-		encodedBody, err = c.fetch.tj.Encode(body)
+		encodedBody, err = c.fch.tj.Encode(body)
 		if err != nil {
 			callback(nil, err)
 			return
@@ -30,7 +30,7 @@ func (c *client) SendBinary(method, url string, body any, callback func([]byte, 
 	if b, ok := body.([]byte); ok {
 		encodedBody = b
 	} else {
-		encodedBody, err = c.fetch.tb.Encode(body)
+		encodedBody, err = c.fch.tb.Encode(body)
 		if err != nil {
 			callback(nil, err)
 			return

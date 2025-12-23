@@ -54,7 +54,7 @@ func main() {
 ![server](example/snapshots/server.png)
 
 ## Documentation
-- [Fetchgo Example](example/README.md)
+- [Fetch Example](example/README.md)
 - [API Reference](docs/API.md)
 - [Architecture Details](docs/ARCHITECTURE.md)
 - [Migration Guide](docs/MIGRATION.md)
