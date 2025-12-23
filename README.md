@@ -50,7 +50,7 @@ func main() {
 ![browser](example/snapshots/browser.png)
 
 
-### servidor ([golite](github.com/tinywasm/tinywasm))
+### servidor ([golite](github.com/tinywasm/app))
 ![server](example/snapshots/server.png)
 
 ## Documentation
