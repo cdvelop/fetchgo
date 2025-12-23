@@ -1,95 +1,55 @@
 # API Reference
 
-## Core Types
+## Top-Level Functions
 
-### `Fetch` struct
+### `func Get(url string) *Request`
+Creates a new GET request.
 
-The main library struct that manages encoders and configuration.
+### `func Post(url string) *Request`
+Creates a new POST request.
 
-```go
-type Fetch struct {
-    // Internal fields for TinyBin and CORS configuration
-}
+### `func Put(url string) *Request`
+Creates a new PUT request.
 
-func New() *Fetch
-```
+### `func Delete(url string) *Request`
+Creates a new DELETE request.
 
-### `Client` interface
+### `func SetLog(fn func(...any))`
+Sets a logger function for debugging.
 
-The HTTP client interface that provides methods for sending requests.
+### `func SetHandler(fn func(*Response))`
+Sets the global handler for `Dispatch()` requests.
 
-```go
-type Client interface {
-    SendJSON(method, url string, body any, callback func([]byte, error))
-    SendBinary(method, url string, body any, callback func([]byte, error))
-    SetHeader(key, value string)
-}
-```
+## Request
 
-### `encoder` interface
+### `func (r *Request) Header(key, value string) *Request`
+Adds a header to the request.
 
-Interface for encoding data, allowing pluggable serialization strategies.
+### `func (r *Request) Body(data []byte) *Request`
+Sets the request body.
 
-```go
-type encoder interface {
-    Encode(data any) ([]byte, error)
-}
-```
+### `func (r *Request) Timeout(ms int) *Request`
+Sets the request timeout in milliseconds.
 
-## Client Methods
+### `func (r *Request) Send(callback func(*Response, error))`
+Executes the request and calls the callback with the response.
 
-### `SendJSON(method, url, body, callback)`
+### `func (r *Request) Dispatch()`
+Executes the request and sends the response to the global handler.
 
-Sends an HTTP request with JSON encoding. The body is encoded as JSON and sent with `Content-Type: application/json; charset=utf-8`. The callback receives the raw response body as `[]byte`.
+## Response
 
-```go
-func SendJSON(method, url string, body any, callback func([]byte, error))
-```
+### `type Response struct`
+- `Status int`: HTTP status code
+- `Headers []Header`: Response headers
+- `RequestURL string`: The URL requested
+- `Method string`: The HTTP method used
 
-### `SendBinary(method, url, body, callback)`
+### `func (r *Response) Body() []byte`
+Returns the response body as a byte slice.
 
-Sends an HTTP request with TinyBin encoding. The body is encoded with TinyBin and sent with `Content-Type: application/octet-stream`. The callback receives the raw response body as `[]byte`.
+### `func (r *Response) Text() string`
+Returns the response body as a string.
 
-```go
-func SendBinary(method, url string, body any, callback func([]byte, error))
-```
-
-**Special case for raw bytes:** When sending `[]byte` data with `SendBinary`, the data is sent as-is without TinyBin encoding.
-
-### `SetHeader(key, value)`
-
-Sets a default header that will be included in all requests from this client. Replaces any existing header with the same key.
-
-```go
-func SetHeader(key, value string)
-```
-
-## Creating Clients
-
-### `NewClient(baseURL, timeoutMS)`
-
-Creates a new HTTP client with the specified base URL and timeout.
-
-```go
-func (f *Fetch) NewClient(baseURL string, timeoutMS int) Client
-```
-
-## Configuration
-
-### Base URL and Timeout
-
-Configure the base URL and request timeout when creating a client:
-
-```go
-fg := fetchgo.New()
-client := fg.NewClient("https://api.example.com", 5000) // 5 second timeout
-```
-
-### Headers
-
-Set default headers that apply to all requests:
-
-```go
-client.SetHeader("Authorization", "Bearer token123")
-client.SetHeader("User-Agent", "MyApp/1.0")
-```
+### `func (r *Response) GetHeader(key string) string`
+Returns the value of the specified header (case-insensitive).

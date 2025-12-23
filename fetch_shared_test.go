@@ -1,22 +1,21 @@
 package fetch_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/tinywasm/fetch"
 )
 
-func SendRequest_GetShared(t *testing.T, client fetch.Client) {
+func SendRequest_GetShared(t *testing.T, baseURL string) {
 	done := make(chan bool)
-	var responseBody []byte
+	var responseBody string
 	var responseErr error
 
-	client.SendJSON("GET", "/get", nil, func(result []byte, err error) {
+	fetch.Get(baseURL + "/get").Send(func(resp *fetch.Response, err error) {
 		if err != nil {
 			responseErr = err
 		} else {
-			responseBody = result
+			responseBody = resp.Text()
 		}
 		done <- true
 	})
@@ -26,45 +25,55 @@ func SendRequest_GetShared(t *testing.T, client fetch.Client) {
 	if responseErr != nil {
 		t.Fatalf("Expected no error, got %v", responseErr)
 	}
-	if string(responseBody) != "get success" {
-		t.Errorf("Expected body 'get success', got '%s'", string(responseBody))
+	if responseBody != "get success" {
+		t.Errorf("Expected body 'get success', got '%s'", responseBody)
 	}
 }
 
-func SendRequest_PostJSONShared(t *testing.T, client fetch.Client) {
+func SendRequest_PostJSONShared(t *testing.T, baseURL string) {
 	done := make(chan bool)
-	requestData := map[string]string{"message": "hello"}
-	var responseBody []byte
+	requestData := `{"message":"hello"}`
+	var responseBody string
 	var responseErr error
 
-	client.SendJSON("POST", "/post_json", requestData, func(result []byte, err error) {
-		if err != nil {
-			responseErr = err
-		} else {
-			responseBody = result
-		}
-		done <- true
-	})
+	fetch.Post(baseURL+"/post_json").
+		Header("Content-Type", "application/json").
+		Body([]byte(requestData)).
+		Send(func(resp *fetch.Response, err error) {
+			if err != nil {
+				responseErr = err
+			} else {
+				responseBody = resp.Text()
+			}
+			done <- true
+		})
 
 	<-done
 
 	if responseErr != nil {
 		t.Fatalf("Expected no error, got %v", responseErr)
 	}
+	// The server should reflect the JSON we sent.
+	// Since we are sending raw bytes, we expect exact match if server behaves simply,
+	// but JSON serialization might slightly differ in spacing if we used a library.
+	// Here we used a string literal, and server likely decodes/encodes.
+	// Let's assume the server returns `{"message":"hello"}`.
 	expected := `{"message":"hello"}`
-	if string(responseBody) != expected {
-		t.Errorf("Expected body '%s', got '%s'", expected, string(responseBody))
+	if responseBody != expected {
+		t.Errorf("Expected body '%s', got '%s'", expected, responseBody)
 	}
 }
 
-func SendRequest_TimeoutSuccessShared(t *testing.T, client fetch.Client) {
+func SendRequest_TimeoutSuccessShared(t *testing.T, baseURL string) {
 	done := make(chan bool)
 	var responseErr error
 
-	client.SendJSON("GET", "/timeout", nil, func(result []byte, err error) {
-		responseErr = err
-		done <- true
-	})
+	fetch.Get(baseURL+"/timeout").
+		Timeout(2000). // 2 seconds should be enough for the /timeout endpoint (usually 100ms or so in tests)
+		Send(func(resp *fetch.Response, err error) {
+			responseErr = err
+			done <- true
+		})
 
 	<-done
 
@@ -73,14 +82,16 @@ func SendRequest_TimeoutSuccessShared(t *testing.T, client fetch.Client) {
 	}
 }
 
-func SendRequest_TimeoutFailureShared(t *testing.T, client fetch.Client) {
+func SendRequest_TimeoutFailureShared(t *testing.T, baseURL string) {
 	done := make(chan bool)
 	var responseErr error
 
-	client.SendJSON("GET", "/timeout", nil, func(result []byte, err error) {
-		responseErr = err
-		done <- true
-	})
+	fetch.Get(baseURL+"/timeout").
+		Timeout(10). // 10ms should be too short
+		Send(func(resp *fetch.Response, err error) {
+			responseErr = err
+			done <- true
+		})
 
 	<-done
 
@@ -89,59 +100,60 @@ func SendRequest_TimeoutFailureShared(t *testing.T, client fetch.Client) {
 	}
 }
 
-func SendRequest_ServerErrorShared(t *testing.T, client fetch.Client) {
+func SendRequest_ServerErrorShared(t *testing.T, baseURL string) {
 	done := make(chan bool)
+	var status int
 	var responseErr error
 
-	client.SendJSON("GET", "/error", nil, func(result []byte, err error) {
-		responseErr = err
-		done <- true
-	})
-
-	<-done
-
-	if responseErr == nil {
-		t.Fatal("Expected an error for 500 status code, but got nil.")
-	}
-}
-
-func SendRequest_PostFileShared(t *testing.T, client fetch.Client) {
-	// Create a temporary file with content.
-	tmpfile, err := os.CreateTemp("", "test_upload_*.txt")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.Remove(tmpfile.Name())
-
-	content := "this is the content of the test file"
-	if _, err := tmpfile.Write([]byte(content)); err != nil {
-		t.Fatal(err)
-	}
-	if err := tmpfile.Close(); err != nil {
-		t.Fatal(err)
-	}
-
-	done := make(chan bool)
-	var responseBody []byte
-	var responseErr error
-
-	// Read file content and send as binary data.
-	fileContent := []byte(content)
-	client.SendBinary("POST", "/upload", fileContent, func(result []byte, err error) {
+	fetch.Get(baseURL + "/error").Send(func(resp *fetch.Response, err error) {
 		if err != nil {
 			responseErr = err
 		} else {
-			responseBody = result
+			status = resp.Status
 		}
 		done <- true
 	})
 
 	<-done
 
+	// In the new API, 500 is not an error in the callback sense (network error),
+	// it's a valid response with status 500.
+	if responseErr != nil {
+		t.Fatalf("Expected no network error, got %v", responseErr)
+	}
+	if status != 500 {
+		t.Errorf("Expected status 500, got %d", status)
+	}
+}
+
+func SendRequest_PostFileShared(t *testing.T, baseURL string) {
+	// Create a temporary file with content (just to simulate reading a file, though we use bytes directly)
+	content := "this is the content of the test file"
+
+	done := make(chan bool)
+	var responseBody string
+	var responseErr error
+
+	// Read file content and send as binary data.
+	fileContent := []byte(content)
+	fetch.Post(baseURL+"/upload").
+		Header("Content-Type", "application/octet-stream").
+		Body(fileContent).
+		Send(func(resp *fetch.Response, err error) {
+			if err != nil {
+				responseErr = err
+			} else {
+				responseBody = resp.Text()
+			}
+			done <- true
+		})
+
+	<-done
+
 	if responseErr != nil {
 		t.Fatalf("Expected no error during file upload, got %v", responseErr)
 	}
-	if string(responseBody) != content {
-		t.Errorf("Expected echoed file content '%s', got '%s'", content, string(responseBody))
+	if responseBody != content {
+		t.Errorf("Expected echoed file content '%s', got '%s'", content, responseBody)
 	}
 }
