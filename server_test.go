@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"time"
 )
 
@@ -25,8 +26,11 @@ func setupTestServer() *httptest.Server {
 
 	// Handler for JSON POST requests, echoes the body back
 	mux.HandleFunc("/post_json", func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Content-Type") != "application/json; charset=utf-8" {
-			http.Error(w, "bad content type", http.StatusBadRequest)
+		// Strict content-type check relaxed slightly to allow "application/json" without charset
+		// or strict match.
+		ct := r.Header.Get("Content-Type")
+		if !strings.Contains(ct, "application/json") {
+			http.Error(w, "bad content type\n", http.StatusBadRequest)
 			return
 		}
 		body, _ := io.ReadAll(r.Body)

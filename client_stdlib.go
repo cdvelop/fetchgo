@@ -13,10 +13,10 @@ import (
 )
 
 // doRequest is the standard library implementation for making an HTTP request.
-func (c *client) doRequest(method, endpoint string, contentType string, body []byte, callback func([]byte, error)) {
+func doRequest(r *Request, callback func(*Response, error)) {
 	go func() {
 		// 1. Build the full URL.
-		fullURL, err := c.buildURL(endpoint)
+		fullURL, err := buildURL(r.url)
 		if err != nil {
 			callback(nil, err)
 			return
@@ -24,39 +24,28 @@ func (c *client) doRequest(method, endpoint string, contentType string, body []b
 
 		// 2. Prepare body reader.
 		var bodyReader io.Reader
-		if len(body) > 0 {
-			bodyReader = bytes.NewReader(body)
+		if len(r.body) > 0 {
+			bodyReader = bytes.NewReader(r.body)
 		}
 
-		// 3. Prepare the headers.
-		headers := c.getHeaders()
-		if contentType != "" {
-			if headers == nil {
-				headers = make(map[string]string)
-			}
-			if _, exists := headers["Content-Type"]; !exists {
-				headers["Content-Type"] = contentType
-			}
-		}
-
-		// 4. Set up the request context with timeout.
+		// 3. Set up the request context with timeout.
 		ctx := context.Background()
-		if c.timeoutMS > 0 {
+		if r.timeout > 0 {
 			var cancel context.CancelFunc
-			ctx, cancel = context.WithTimeout(ctx, time.Duration(c.timeoutMS)*time.Millisecond)
+			ctx, cancel = context.WithTimeout(ctx, time.Duration(r.timeout)*time.Millisecond)
 			defer cancel()
 		}
 
-		// 5. Create the HTTP request.
-		req, err := http.NewRequestWithContext(ctx, method, fullURL, bodyReader)
+		// 4. Create the HTTP request.
+		req, err := http.NewRequestWithContext(ctx, r.method, fullURL, bodyReader)
 		if err != nil {
 			callback(nil, Errf("failed to create request: %s", err.Error()))
 			return
 		}
 
-		// Add headers to the request.
-		for k, v := range headers {
-			req.Header.Set(k, v)
+		// 5. Add headers to the request.
+		for _, h := range r.headers {
+			req.Header.Add(h.Key, h.Value)
 		}
 
 		// 6. Execute the request.
@@ -74,12 +63,22 @@ func (c *client) doRequest(method, endpoint string, contentType string, body []b
 			return
 		}
 
-		// 8. Check for non-successful status codes.
-		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			callback(responseBody, Errf("request failed with status %d: %s", resp.StatusCode, string(responseBody)))
-			return
+		// 8. Construct the Response object.
+		var headers []Header
+		for k, v := range resp.Header {
+			for _, val := range v {
+				headers = append(headers, Header{Key: k, Value: val})
+			}
 		}
 
-		callback(responseBody, nil)
+		response := &Response{
+			Status:     resp.StatusCode,
+			Headers:    headers,
+			RequestURL: fullURL,
+			Method:     r.method,
+			body:       responseBody,
+		}
+
+		callback(response, nil)
 	}()
 }

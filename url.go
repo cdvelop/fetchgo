@@ -5,19 +5,17 @@ import (
 )
 
 // buildURL constructs the full request URL.
-// If the provided endpoint is an absolute URL, it is used as is.
-// Otherwise, it is joined with the client's BaseURL.
-func (c *client) buildURL(endpoint string) (string, error) {
-	// Check if the endpoint is already an absolute URL.
-	if HasPrefix(endpoint, "http://") || HasPrefix(endpoint, "https://") {
-		return endpoint, nil
+// Since the new API requires absolute URLs (or at least user-managed ones),
+// this function now just validates the URL or passes it through.
+// It is kept to satisfy existing calls in client_stdlib.go and client_wasm.go
+func buildURL(url string) (string, error) {
+	if url == "" {
+		return "", Err("URL cannot be empty")
 	}
+	// In the previous implementation, we checked for absolute URLs if base was not set.
+	// Now we don't have a base URL in the client, so we assume the user provides a valid URL.
+	// We could enforce http/https prefix here if we wanted to be strict.
 
-	if c.baseURL == "" {
-		return "", Err("BaseURL is not set, cannot build URL for relative endpoint")
-	}
-
-	// Use PathJoin from tinystring to join the base URL and the endpoint.
-	// It handles slash deduplication.
-	return PathJoin(c.baseURL, endpoint).String(), nil
+	// For now, let's just return it.
+	return url, nil
 }

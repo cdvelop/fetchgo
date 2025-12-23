@@ -9,9 +9,9 @@ import (
 )
 
 // doRequest is the WASM implementation for making an HTTP request using the browser's fetch API.
-func (c *client) doRequest(method, endpoint string, contentType string, body []byte, callback func([]byte, error)) {
+func doRequest(r *Request, callback func(*Response, error)) {
 	// 1. Build the full URL.
-	fullURL, err := c.buildURL(endpoint)
+	fullURL, err := buildURL(r.url)
 	if err != nil {
 		callback(nil, err)
 		return
@@ -19,44 +19,35 @@ func (c *client) doRequest(method, endpoint string, contentType string, body []b
 
 	// 2. Prepare request body.
 	var jsBody js.Value
-	if len(body) > 0 {
+	if len(r.body) > 0 {
 		// Convert Go byte slice to a JS Uint8Array's buffer.
-		uint8Array := js.Global().Get("Uint8Array").New(len(body))
-		js.CopyBytesToJS(uint8Array, body)
+		uint8Array := js.Global().Get("Uint8Array").New(len(r.body))
+		js.CopyBytesToJS(uint8Array, r.body)
 		jsBody = uint8Array.Get("buffer")
 	}
 
 	// 3. Prepare headers object for the fetch call.
-	headers := c.getHeaders()
-	jsHeaders := js.Global().Get("Object").New()
-	if contentType != "" {
-		if headers == nil {
-			headers = make(map[string]string)
-		}
-		if _, exists := headers["Content-Type"]; !exists {
-			headers["Content-Type"] = contentType
-		}
-	}
-	for k, v := range headers {
-		jsHeaders.Set(k, v)
+	jsHeaders := js.Global().Get("Headers").New()
+	for _, h := range r.headers {
+		jsHeaders.Call("append", h.Key, h.Value)
 	}
 
 	// 4. Prepare the main options object for fetch.
 	options := js.Global().Get("Object").New()
-	options.Set("method", method)
+	options.Set("method", r.method)
 	options.Set("headers", jsHeaders)
 	if !jsBody.IsUndefined() {
 		options.Set("body", jsBody)
 	}
 
 	// 5. Handle timeout with AbortController.
-	if c.timeoutMS > 0 {
+	if r.timeout > 0 {
 		controller := js.Global().Get("AbortController").New()
 		options.Set("signal", controller.Get("signal"))
 		js.Global().Call("setTimeout", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 			controller.Call("abort")
 			return nil
-		}), c.timeoutMS)
+		}), r.timeout)
 	}
 
 	// 6. Define promise handlers to bridge async JS to sync Go.
@@ -76,10 +67,18 @@ func (c *client) doRequest(method, endpoint string, contentType string, body []b
 		goBytes := make([]byte, uint8Array.Get("length").Int())
 		js.CopyBytesToGo(goBytes, uint8Array)
 
-		callback(goBytes, nil)
-		cleanup()
+		// The response object was partially built in responseHandler, we need to pass it here?
+		// No, the promise chain is tricky with how we want to return both headers/status AND body.
+		// So we will change how we handle this.
+		// Ideally, we want to capture the response object in the first promise,
+		// and then combine it with the body in the second promise.
+
+		// However, the callback structure expects *Response.
+		// We'll use a closure variable to hold the partial response.
 		return nil
 	})
+
+	// Re-implementing logic to capture response details properly.
 
 	// failure handles any error in the promise chain.
 	failure = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -105,31 +104,74 @@ func (c *client) doRequest(method, endpoint string, contentType string, body []b
 		return nil
 	})
 
+	var partialResponse *Response
+
 	// responseHandler handles the initial Response object from fetch.
 	responseHandler = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		response := args[0]
-		status := response.Get("status").Int()
+		jsResp := args[0]
 
-		if !response.Get("ok").Bool() {
-			// If status is not 2xx, read body as text for the error message.
-			var textHandler js.Func
-			textHandler = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-				defer textHandler.Release()
-				errMsg := args[0].String()
-				err := Errf("request failed with status %d: %s", status, errMsg)
+		status := jsResp.Get("status").Int()
 
-				callback(nil, err)
-				cleanup()
-				return nil
+		// Extract headers
+		var headers []Header
+		// Headers iterator
+		jsHeaders := jsResp.Get("headers")
+		iterator := jsHeaders.Call("entries")
+
+		for {
+			entry := iterator.Call("next")
+			if entry.Get("done").Bool() {
+				break
+			}
+			pair := entry.Get("value")
+			headers = append(headers, Header{
+				Key:   pair.Index(0).String(),
+				Value: pair.Index(1).String(),
 			})
-			response.Call("text").Call("then", textHandler, failure)
-		} else {
-			// On success, get the body as an ArrayBuffer, which also returns a promise.
-			response.Call("arrayBuffer").Call("then", success, failure)
 		}
+
+		partialResponse = &Response{
+			Status:     status,
+			Headers:    headers,
+			RequestURL: fullURL,
+			Method:     r.method,
+		}
+
+		// Always read the body as ArrayBuffer, regardless of status.
+		// The user is responsible for checking status code.
+		return jsResp.Call("arrayBuffer")
+	})
+
+	// successBody handles the ArrayBuffer from the response body.
+	successBody := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		uint8Array := js.Global().Get("Uint8Array").New(args[0])
+		goBytes := make([]byte, uint8Array.Get("length").Int())
+		js.CopyBytesToGo(goBytes, uint8Array)
+
+		if partialResponse != nil {
+			partialResponse.body = goBytes
+			callback(partialResponse, nil)
+		} else {
+			// Should not happen
+			callback(nil, Errf("internal error: response missing"))
+		}
+
+		cleanup()
 		return nil
 	})
 
+	// Re-assign success to successBody for clarity in cleanup if I used the previous name
+	// But I defined successBody separately. So I need to update cleanup.
+
+	cleanup = func() {
+		failure.Release()
+		responseHandler.Release()
+		successBody.Release()
+	}
+
 	// 7. Execute the fetch call and start the promise chain.
-	js.Global().Call("fetch", fullURL, options).Call("then", responseHandler, failure)
+	js.Global().Call("fetch", fullURL, options).
+		Call("then", responseHandler).
+		Call("then", successBody).
+		Call("catch", failure)
 }
