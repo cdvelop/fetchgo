@@ -5,9 +5,7 @@ package main
 import (
 	"syscall/js"
 
-	"github.com/tinywasm/binary"
 	"github.com/tinywasm/fetch"
-	"github.com/tinywasm/fetch/example/model"
 )
 
 func main() {
@@ -20,17 +18,17 @@ func main() {
 
 	// Title
 	h1 := document.Call("createElement", "h1")
-	h1.Set("innerHTML", "Fetch Binary Example")
+	h1.Set("innerHTML", "Fetch Text Example")
 	body.Call("appendChild", h1)
 
 	// Info
 	p := document.Call("createElement", "p")
-	p.Set("innerHTML", "Click the button to send a User struct (binary) to the server.")
+	p.Set("innerHTML", "Click the button to send text 'Alice' to the server.")
 	body.Call("appendChild", p)
 
 	// Button
 	btn := document.Call("createElement", "button")
-	btn.Set("innerText", "Send User Data")
+	btn.Set("innerText", "Send Text Data")
 	body.Call("appendChild", btn)
 
 	// Result container
@@ -42,23 +40,12 @@ func main() {
 	cb := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resultDiv.Set("innerText", "Sending...")
 
-		user := model.User{
-			Name:  "Alice",
-			Email: "alice@example.com",
-			Age:   30,
-		}
+		textData := "Alice"
 
-		// Encode user to binary
-		var data []byte
-		if err := binary.Encode(&user, &data); err != nil {
-			resultDiv.Set("innerText", "Encode error: "+err.Error())
-			return nil
-		}
-
-		// Send POST request with binary data
+		// Send POST request with plain text
 		fetch.Post(origin + "/api/user").
-			ContentTypeBinary().
-			Body(data).
+			ContentTypeText().
+			Body([]byte(textData)).
 			Timeout(5000).
 			Send(func(resp *fetch.Response, err error) {
 				if err != nil {

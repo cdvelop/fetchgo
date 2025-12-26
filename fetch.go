@@ -12,11 +12,12 @@ type Header struct {
 
 // Request represents an HTTP request builder.
 type Request struct {
-	method  string
-	url     string
-	headers []Header
-	body    []byte
-	timeout int
+	method   string
+	endpoint any
+	baseURL  string // per-request override
+	headers  []Header
+	body     []byte
+	timeout  int
 }
 
 // Response represents an HTTP response.
@@ -29,23 +30,29 @@ type Response struct {
 }
 
 // Get creates a new GET request.
-func Get(url string) *Request {
-	return &Request{method: "GET", url: url}
+func Get(endpoint any) *Request {
+	return &Request{method: "GET", endpoint: endpoint}
 }
 
 // Post creates a new POST request.
-func Post(url string) *Request {
-	return &Request{method: "POST", url: url}
+func Post(endpoint any) *Request {
+	return &Request{method: "POST", endpoint: endpoint}
 }
 
 // Put creates a new PUT request.
-func Put(url string) *Request {
-	return &Request{method: "PUT", url: url}
+func Put(endpoint any) *Request {
+	return &Request{method: "PUT", endpoint: endpoint}
 }
 
 // Delete creates a new DELETE request.
-func Delete(url string) *Request {
-	return &Request{method: "DELETE", url: url}
+func Delete(endpoint any) *Request {
+	return &Request{method: "DELETE", endpoint: endpoint}
+}
+
+// BaseURL sets a per-request base URL override.
+func (r *Request) BaseURL(url string) *Request {
+	r.baseURL = url
+	return r
 }
 
 // Header adds a header to the request.

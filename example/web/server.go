@@ -11,9 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/tinywasm/binary"
-	"github.com/tinywasm/fetch/example/model"
 )
 
 type gzipResponseWriter struct {
@@ -89,7 +86,7 @@ func main() {
 
 	mux.Handle("/", noCache(gzipHandler(fs)))
 
-	// API endpoint to receive User data via TinyBin
+	// API endpoint to receive User data as plain text
 	mux.HandleFunc("/api/user", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -103,18 +100,11 @@ func main() {
 			return
 		}
 
-		// Decode binary
-		var user model.User
-		err = binary.Decode(body, &user)
-		if err != nil {
-			http.Error(w, "Decode error: "+err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		log.Printf("Received user: %+v", user)
+		text := string(body)
+		log.Printf("Received text: %s", text)
 
 		// Respond
-		w.Write([]byte("Server received: " + user.Name))
+		w.Write([]byte("Server received: " + text))
 	})
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

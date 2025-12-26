@@ -49,6 +49,36 @@ func setupTestServer() *httptest.Server {
 		w.Write(body)
 	})
 
+	// Handler for PUT requests
+	mux.HandleFunc("/put", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			http.Error(w, "bad method", http.StatusMethodNotAllowed)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("put success"))
+	})
+
+	// Handler for DELETE requests
+	mux.HandleFunc("/delete", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			http.Error(w, "bad method", http.StatusMethodNotAllowed)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("delete success"))
+	})
+
+	// Handler that reflects headers
+	mux.HandleFunc("/headers", func(w http.ResponseWriter, r *http.Request) {
+		for k, v := range r.Header {
+			w.Header().Set("X-Reflected-"+k, strings.Join(v, ","))
+		}
+		w.Header().Set("X-Test-Simple", "simple value")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("headers ok"))
+	})
+
 	// Handler that simulates a slow response
 	mux.HandleFunc("/timeout", func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(100 * time.Millisecond)

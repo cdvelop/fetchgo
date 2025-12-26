@@ -16,7 +16,7 @@ import (
 func doRequest(r *Request, callback func(*Response, error)) {
 	go func() {
 		// 1. Build the full URL.
-		fullURL, err := buildURL(r.url)
+		fullURL, err := buildURL(r)
 		if err != nil {
 			callback(nil, err)
 			return
@@ -81,4 +81,8 @@ func doRequest(r *Request, callback func(*Response, error)) {
 
 		callback(response, nil)
 	}()
+}
+
+func getOrigin() string {
+	return ""
 }

@@ -8,8 +8,8 @@ A minimal, zero-dependency, WASM-compatible HTTP client for Go.
 ## Features
 
 - **Tiny API**: `Get`, `Post`, `Put`, `Delete`
+- **Declarative Headers**: `ContentTypeJSON()`, `ContentTypeBinary()`, etc.
 - **WASM Compatible**: Works in browsers using `fetch` API and in standard Go
-- **Zero Dependencies**: No external libraries required
 - **Async Support**: `Send` (callback) and `Dispatch` (fire-and-forget)
 
 ## Installation
@@ -24,36 +24,50 @@ go get github.com/tinywasm/fetch
 package main
 
 import (
-	"fmt"
 	"github.com/tinywasm/fetch"
 )
 
 func main() {
-	// Simple GET request
-	fetch.Get("https://api.example.com/data").
+	// Simple GET request using relative path (auto-detects origin in WASM)
+	fetch.Get("/data").
 		Send(func(resp *fetch.Response, err error) {
 			if err != nil {
-				fmt.Println("Error:", err)
+				println("Error:", err.Error())
 				return
 			}
-			fmt.Println("Status:", resp.Status)
-			fmt.Println("Body:", resp.Text())
+			println("Status:", resp.Status)
+			println("Body:", resp.Text())
 		})
 
-	// POST request with JSON body
+	// POST request with JSON body using custom BaseURL
 	body := []byte(`{"name":"Alice"}`)
-	fetch.Post("https://api.example.com/users").
-		Header("Content-Type", "application/json").
+	fetch.Post("/users").
+		BaseURL("https://api.example.com").
+		ContentTypeJSON().
 		Body(body).
 		Timeout(5000).
 		Send(func(resp *fetch.Response, err error) {
 			if err != nil {
 				return
 			}
-			fmt.Println("Created:", resp.Text())
+			println("Created:", resp.Text())
 		})
 }
 ```
+
+## Documentation
+
+- [Base URL & Endpoint Resolution](docs/BASE_URL.md) - How URLs are resolved automatically
+- [HTTP Headers](docs/HEADERS.md) - How to set and retrieve headers
+
+## Content-Type Helpers
+
+The following declarative methods are available on `Request`:
+- `ContentTypeJSON()` -> `application/json`
+- `ContentTypeBinary()` -> `application/octet-stream`
+- `ContentTypeForm()` -> `application/x-www-form-urlencoded`
+- `ContentTypeText()` -> `text/plain`
+- `ContentTypeHTML()` -> `text/html`
 
 ## Global Handler (Dispatch)
 
@@ -64,11 +78,15 @@ func main() {
 	// Set a global handler
 	fetch.SetHandler(func(resp *fetch.Response) {
 		if resp.Status >= 400 {
-			fmt.Printf("Request to %s failed with %d\n", resp.RequestURL, resp.Status)
+			println("Request to", resp.RequestURL, "failed with", resp.Status)
 		}
 	})
 
 	// Fire and forget
-	fetch.Post("/analytics").Body([]byte("event=click")).Dispatch()
+	fetch.Post("/analytics").
+		ContentTypeText().
+		Body([]byte("event=click")).
+		Dispatch()
 }
 ```
+

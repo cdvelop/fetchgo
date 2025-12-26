@@ -11,7 +11,7 @@ import (
 // doRequest is the WASM implementation for making an HTTP request using the browser's fetch API.
 func doRequest(r *Request, callback func(*Response, error)) {
 	// 1. Build the full URL.
-	fullURL, err := buildURL(r.url)
+	fullURL, err := buildURL(r)
 	if err != nil {
 		callback(nil, err)
 		return
@@ -169,9 +169,12 @@ func doRequest(r *Request, callback func(*Response, error)) {
 		successBody.Release()
 	}
 
-	// 7. Execute the fetch call and start the promise chain.
 	js.Global().Call("fetch", fullURL, options).
 		Call("then", responseHandler).
 		Call("then", successBody).
 		Call("catch", failure)
+}
+
+func getOrigin() string {
+	return js.Global().Get("location").Get("origin").String()
 }

@@ -4,18 +4,28 @@ import (
 	. "github.com/tinywasm/fmt"
 )
 
-// buildURL constructs the full request URL.
-// Since the new API requires absolute URLs (or at least user-managed ones),
-// this function now just validates the URL or passes it through.
-// It is kept to satisfy existing calls in client_stdlib.go and client_wasm.go
-func buildURL(url string) (string, error) {
-	if url == "" {
-		return "", Err("URL cannot be empty")
-	}
-	// In the previous implementation, we checked for absolute URLs if base was not set.
-	// Now we don't have a base URL in the client, so we assume the user provides a valid URL.
-	// We could enforce http/https prefix here if we wanted to be strict.
+var defaultBaseURL string
 
-	// For now, let's just return it.
-	return url, nil
+// SetBaseURL sets the global base URL for all requests.
+func SetBaseURL(url string) {
+	defaultBaseURL = url
+}
+
+// GetBaseURL returns the current global base URL.
+func GetBaseURL() string {
+	return defaultBaseURL
+}
+
+// buildURL constructs the full request URL using the new resolution logic.
+func buildURL(r *Request) (string, error) {
+	endpoint, err := resolveEndpoint(r.endpoint)
+	if err != nil {
+		return "", err
+	}
+
+	if endpoint == "" {
+		return "", Err("endpoint cannot be empty")
+	}
+
+	return buildFullURL(endpoint, r.baseURL)
 }

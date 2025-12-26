@@ -2,6 +2,7 @@ package fetch_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/tinywasm/fetch"
 )
@@ -155,5 +156,86 @@ func SendRequest_PostFileShared(t *testing.T, baseURL string) {
 	}
 	if responseBody != content {
 		t.Errorf("Expected echoed file content '%s', got '%s'", content, responseBody)
+	}
+}
+
+func SendRequest_PutDeleteShared(t *testing.T, baseURL string) {
+	done := make(chan bool)
+	var body string
+
+	fetch.Put(baseURL + "/put").Send(func(resp *fetch.Response, err error) {
+		if err == nil {
+			body = resp.Text()
+		}
+		done <- true
+	})
+	<-done
+	if body != "put success" {
+		t.Errorf("Put failed: %s", body)
+	}
+
+	done = make(chan bool)
+	fetch.Delete(baseURL + "/delete").Send(func(resp *fetch.Response, err error) {
+		if err == nil {
+			body = resp.Text()
+		}
+		done <- true
+	})
+	<-done
+	if body != "delete success" {
+		t.Errorf("Delete failed: %s", body)
+	}
+}
+
+func SendRequest_HeadersShared(t *testing.T, baseURL string) {
+	done := make(chan bool)
+	var respHeaders *fetch.Response
+
+	fetch.Get(baseURL+"/headers").
+		Header("X-Custom", "custom-value").
+		Send(func(resp *fetch.Response, err error) {
+			if err == nil {
+				respHeaders = resp
+			}
+			done <- true
+		})
+	<-done
+
+	if respHeaders == nil {
+		t.Fatal("Response is nil")
+	}
+
+	val := respHeaders.GetHeader("X-Test-Simple")
+	if val != "simple value" {
+		t.Errorf("Expected 'simple value', got '%s'", val)
+	}
+
+	// Case insensitive check
+	val = respHeaders.GetHeader("x-test-simple")
+	if val != "simple value" {
+		t.Errorf("Case insensitive GetHeader failed: got '%s'", val)
+	}
+}
+
+func SendRequest_ContentTypesShared(t *testing.T, baseURL string) {
+	// Just verify they dont panic and build correctly
+	fetch.Post("/").ContentTypeForm().ContentTypeText().ContentTypeHTML()
+}
+
+func SendRequest_DispatchShared(t *testing.T, baseURL string) {
+	done := make(chan bool)
+	fetch.SetHandler(func(resp *fetch.Response) {
+		if resp.RequestURL == baseURL+"/get" {
+			done <- true
+		}
+	})
+
+	fetch.Get(baseURL + "/get").Dispatch()
+
+	select {
+	case <-done:
+		// success
+	case <-time.After(time.Second * 2):
+		t.Error("Dispatch global handler timeout")
 	}
 }
