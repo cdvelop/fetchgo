@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -44,7 +45,7 @@ func main() {
 
 	// Handler for JSON POST requests, echoes the body back
 	mux.HandleFunc("/post_json", func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Content-Type") != "application/json; charset=utf-8" {
+		if !strings.Contains(r.Header.Get("Content-Type"), "application/json") {
 			http.Error(w, "bad content type", http.StatusBadRequest)
 			return
 		}
@@ -74,6 +75,16 @@ func main() {
 	// Handler that always returns an error status
 	mux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
+	})
+
+	// Shutdown handler
+	mux.HandleFunc("/shutdown", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("shutting down"))
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			os.Exit(0)
+		}()
 	})
 
 	// Create listener with dynamic port (0 = let OS choose)

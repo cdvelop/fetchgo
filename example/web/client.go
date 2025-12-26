@@ -5,6 +5,7 @@ package main
 import (
 	"syscall/js"
 
+	"github.com/tinywasm/binary"
 	"github.com/tinywasm/fetch"
 	"github.com/tinywasm/fetch/example/model"
 )
@@ -13,16 +14,13 @@ func main() {
 	// Get the current window location origin to use as base URL
 	origin := js.Global().Get("location").Get("origin").String()
 
-	fg := fetch.New()
-	client := fg.NewClient(origin, 5000)
-
 	// Setup UI
 	document := js.Global().Get("document")
 	body := document.Get("body")
 
 	// Title
 	h1 := document.Call("createElement", "h1")
-	h1.Set("innerHTML", "Fetch TinyBin Example")
+	h1.Set("innerHTML", "Fetch Binary Example")
 	body.Call("appendChild", h1)
 
 	// Info
@@ -50,13 +48,25 @@ func main() {
 			Age:   30,
 		}
 
-		client.SendBinary("POST", "/api/user", user, func(resp []byte, err error) {
-			if err != nil {
-				resultDiv.Set("innerText", "Error: "+err.Error())
-				return
-			}
-			resultDiv.Set("innerText", "Response: "+string(resp))
-		})
+		// Encode user to binary
+		var data []byte
+		if err := binary.Encode(&user, &data); err != nil {
+			resultDiv.Set("innerText", "Encode error: "+err.Error())
+			return nil
+		}
+
+		// Send POST request with binary data
+		fetch.Post(origin + "/api/user").
+			ContentTypeBinary().
+			Body(data).
+			Timeout(5000).
+			Send(func(resp *fetch.Response, err error) {
+				if err != nil {
+					resultDiv.Set("innerText", "Error: "+err.Error())
+					return
+				}
+				resultDiv.Set("innerText", "Response: "+resp.Text())
+			})
 
 		return nil
 	})

@@ -36,8 +36,8 @@ func SendRequest_PostJSONShared(t *testing.T, baseURL string) {
 	var responseBody string
 	var responseErr error
 
-	fetch.Post(baseURL+"/post_json").
-		Header("Content-Type", "application/json").
+	fetch.Post(baseURL + "/post_json").
+		ContentTypeJSON().
 		Body([]byte(requestData)).
 		Send(func(resp *fetch.Response, err error) {
 			if err != nil {
@@ -68,7 +68,7 @@ func SendRequest_TimeoutSuccessShared(t *testing.T, baseURL string) {
 	done := make(chan bool)
 	var responseErr error
 
-	fetch.Get(baseURL+"/timeout").
+	fetch.Get(baseURL + "/timeout").
 		Timeout(2000). // 2 seconds should be enough for the /timeout endpoint (usually 100ms or so in tests)
 		Send(func(resp *fetch.Response, err error) {
 			responseErr = err
@@ -86,7 +86,7 @@ func SendRequest_TimeoutFailureShared(t *testing.T, baseURL string) {
 	done := make(chan bool)
 	var responseErr error
 
-	fetch.Get(baseURL+"/timeout").
+	fetch.Get(baseURL + "/timeout").
 		Timeout(10). // 10ms should be too short
 		Send(func(resp *fetch.Response, err error) {
 			responseErr = err
@@ -136,8 +136,8 @@ func SendRequest_PostFileShared(t *testing.T, baseURL string) {
 
 	// Read file content and send as binary data.
 	fileContent := []byte(content)
-	fetch.Post(baseURL+"/upload").
-		Header("Content-Type", "application/octet-stream").
+	fetch.Post(baseURL + "/upload").
+		ContentTypeBinary().
 		Body(fileContent).
 		Send(func(resp *fetch.Response, err error) {
 			if err != nil {

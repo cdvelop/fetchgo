@@ -12,8 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/tinywasm/binary"
 	"github.com/tinywasm/fetch/example/model"
-	"github.com/tinywasm/gobin"
 )
 
 type gzipResponseWriter struct {
@@ -103,9 +103,9 @@ func main() {
 			return
 		}
 
-		// Decode TinyBin
+		// Decode binary
 		var user model.User
-		err = gobin.New().Decode(body, &user)
+		err = binary.Decode(body, &user)
 		if err != nil {
 			http.Error(w, "Decode error: "+err.Error(), http.StatusBadRequest)
 			return

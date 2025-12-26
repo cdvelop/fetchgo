@@ -1,7 +1,7 @@
 package fetch
 
 import (
-	"strings"
+	. "github.com/tinywasm/fmt"
 )
 
 // Header represents a single HTTP header key-value pair.
@@ -54,6 +54,31 @@ func (r *Request) Header(key, value string) *Request {
 	return r
 }
 
+// ContentTypeJSON sets Content-Type to application/json
+func (r *Request) ContentTypeJSON() *Request {
+	return r.Header("Content-Type", "application/json")
+}
+
+// ContentTypeBinary sets Content-Type to application/octet-stream
+func (r *Request) ContentTypeBinary() *Request {
+	return r.Header("Content-Type", "application/octet-stream")
+}
+
+// ContentTypeForm sets Content-Type to application/x-www-form-urlencoded
+func (r *Request) ContentTypeForm() *Request {
+	return r.Header("Content-Type", "application/x-www-form-urlencoded")
+}
+
+// ContentTypeText sets Content-Type to text/plain
+func (r *Request) ContentTypeText() *Request {
+	return r.Header("Content-Type", "text/plain")
+}
+
+// ContentTypeHTML sets Content-Type to text/html
+func (r *Request) ContentTypeHTML() *Request {
+	return r.Header("Content-Type", "text/html")
+}
+
 // Body sets the request body.
 func (r *Request) Body(data []byte) *Request {
 	r.body = data
@@ -100,9 +125,9 @@ func (r *Response) Text() string {
 // GetHeader returns the value of the specified header.
 // It is case-insensitive.
 func (r *Response) GetHeader(key string) string {
-	key = strings.ToLower(key)
+	key = Convert(key).ToLower().String()
 	for _, h := range r.Headers {
-		if strings.ToLower(h.Key) == key {
+		if Convert(h.Key).ToLower().String() == key {
 			return h.Value
 		}
 	}

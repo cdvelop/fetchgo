@@ -3,10 +3,9 @@
 package fetch_test
 
 import (
+	"net/http"
 	"os"
 	"testing"
-
-	"github.com/tinywasm/fetch"
 )
 
 func TestWasm(t *testing.T) {
@@ -17,18 +16,17 @@ func TestWasm(t *testing.T) {
 	}
 	serverURL := string(urlBytes)
 
-	client := fetch.New().NewClient(serverURL, 0)
+	// No Client initialization needed for the simplified API
 
-	t.Run("Get", func(t *testing.T) { SendRequest_GetShared(t, client) })
-	t.Run("PostJSON", func(t *testing.T) { SendRequest_PostJSONShared(t, client) })
-	t.Run("TimeoutSuccess", func(t *testing.T) {
-		timeoutClient := fetch.New().NewClient(serverURL, 200)
-		SendRequest_TimeoutSuccessShared(t, timeoutClient)
-	})
-	t.Run("TimeoutFailure", func(t *testing.T) {
-		timeoutClient := fetch.New().NewClient(serverURL, 50)
-		SendRequest_TimeoutFailureShared(t, timeoutClient)
-	})
-	t.Run("ServerError", func(t *testing.T) { SendRequest_ServerErrorShared(t, client) })
-	t.Run("PostFile", func(t *testing.T) { SendRequest_PostFileShared(t, client) })
+	// Shutdown server after tests
+	defer func() {
+		http.Get(serverURL + "/shutdown")
+	}()
+
+	t.Run("Get", func(t *testing.T) { SendRequest_GetShared(t, serverURL) })
+	t.Run("PostJSON", func(t *testing.T) { SendRequest_PostJSONShared(t, serverURL) })
+	t.Run("TimeoutSuccess", func(t *testing.T) { SendRequest_TimeoutSuccessShared(t, serverURL) })
+	t.Run("TimeoutFailure", func(t *testing.T) { SendRequest_TimeoutFailureShared(t, serverURL) })
+	t.Run("ServerError", func(t *testing.T) { SendRequest_ServerErrorShared(t, serverURL) })
+	t.Run("PostFile", func(t *testing.T) { SendRequest_PostFileShared(t, serverURL) })
 }
